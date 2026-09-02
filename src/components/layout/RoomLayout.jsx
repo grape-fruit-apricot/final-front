@@ -6,7 +6,7 @@ import BottomNav from './BottomNav'
 function RoomLayout() {
   return (
     <AppLayout>
-      <div className="pb-16">
+      <div className="pb-20">
         <Outlet />
       </div>
       <BottomNav />
