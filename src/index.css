@@ -1,1 +1,9 @@
 @import "tailwindcss";
+
+@theme {
+  --color-main-navy: #333d6d;
+  --color-point-orange: #e67449;
+  --color-background: #f9f8fa;
+  --color-app-text: #222f4c;
+  --color-soft-orange: #faefe8;
+}
