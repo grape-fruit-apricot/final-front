@@ -55,3 +55,8 @@ desktop.ini
 *.log
 logs/
 tmp/
+
+# ===== CLAUDE =====
+CLAUDE.md
+TASK.md
+.claude/*
