@@ -2,7 +2,7 @@
 function AppLayout({ children }) {
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto min-h-screen w-full max-w-[430px] bg-white">
+      <div className="mx-auto min-h-screen w-full max-w-[430px]">
         {children}
       </div>
     </div>

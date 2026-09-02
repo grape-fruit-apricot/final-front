@@ -42,8 +42,8 @@ function CreateRoomPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col justify-center gap-6 p-6">
-      <h1 className="text-center text-xl font-bold text-app-text">방 생성하기</h1>
+    <div className="flex min-h-screen flex-col justify-center gap-6 bg-main-navy p-6">
+      <h1 className="text-center text-xl font-bold text-white">방 생성하기</h1>
       {error && <ErrorMessage message="방 생성에 실패했습니다. 다시 시도해주세요." />}
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
         <MapPlaceholder />
