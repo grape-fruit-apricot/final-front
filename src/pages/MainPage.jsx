@@ -51,7 +51,7 @@ function MainPage() {
   })
 
   const handleFindMidpoint = async () => {
-    const result = await createMidpoint(roomUuid).catch(() => null)
+    const result = await createMidpoint(roomUuid, myParticipantId).catch(() => null)
     if (result) {
       setMidpoint(result)
     }

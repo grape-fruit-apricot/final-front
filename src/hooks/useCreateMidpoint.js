@@ -6,11 +6,11 @@ function useCreateMidpoint() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  const create = async (roomUuid) => {
+  const create = async (roomUuid, participantId) => {
     setIsLoading(true)
     setError(null)
     try {
-      return await createMidpoint(roomUuid)
+      return await createMidpoint(roomUuid, participantId)
     } catch (err) {
       setError(err)
       throw err
