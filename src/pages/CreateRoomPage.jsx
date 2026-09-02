@@ -42,7 +42,17 @@ function CreateRoomPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col justify-center gap-6 bg-main-navy p-6">
+    <div className="relative flex min-h-screen flex-col justify-center gap-6 bg-main-navy p-6">
+      <button
+        type="button"
+        onClick={() => navigate(-1)}
+        aria-label="뒤로가기"
+        className="absolute left-4 top-4 flex h-11 w-11 items-center justify-center text-white"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6">
+          <path d="M15 18l-6-6 6-6" />
+        </svg>
+      </button>
       <h1 className="text-center text-xl font-bold text-white">방 생성하기</h1>
       {error && <ErrorMessage message="방 생성에 실패했습니다. 다시 시도해주세요." />}
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
