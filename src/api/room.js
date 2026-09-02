@@ -19,3 +19,8 @@ export function joinRoom(roomUuid, payload) {
 export function fetchParticipantList(roomUuid) {
   return api.get(`/api/rooms/${roomUuid}/participants`)
 }
+
+// 중간지점 계산
+export function createMidpoint(roomUuid) {
+  return api.post(`/api/rooms/${roomUuid}/midpoint`)
+}
