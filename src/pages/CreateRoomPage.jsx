@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
+import useCreateRoom from '../hooks/useCreateRoom'
 import useJoinRoom from '../hooks/useJoinRoom'
 import MapPlaceholder from '../components/common/MapPlaceholder'
 import LoadingSpinner from '../components/common/LoadingSpinner'
@@ -9,32 +10,41 @@ import ErrorMessage from '../components/common/ErrorMessage'
 const TEMP_LAT = 37.5696
 const TEMP_LNG = 126.9842
 
-function JoinRoomFormPage() {
-  const { roomUuid } = useParams()
+function CreateRoomPage() {
   const navigate = useNavigate()
-  const { join, isLoading, error } = useJoinRoom()
+  const { create } = useCreateRoom()
+  const { join } = useJoinRoom()
   const [nickname, setNickname] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState(null)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    const participant = await join(roomUuid, {
-      nickname,
-      lat: TEMP_LAT,
-      lng: TEMP_LNG,
-    }).catch(() => null)
-    if (participant) {
-      navigate(`/rooms/${roomUuid}`)
+    setIsSubmitting(true)
+    setError(null)
+    try {
+      const room = await create()
+      await join(room.roomUuid, {
+        nickname,
+        lat: TEMP_LAT,
+        lng: TEMP_LNG,
+      })
+      navigate(`/rooms/${room.roomUuid}`)
+    } catch (err) {
+      setError(err)
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
-  if (isLoading) {
+  if (isSubmitting) {
     return <LoadingSpinner />
   }
 
   return (
     <div className="flex min-h-screen flex-col justify-center gap-6 p-6">
-      <h1 className="text-center text-xl font-bold text-app-text">닉네임을 입력해주세요</h1>
-      {error && <ErrorMessage message="참가에 실패했습니다. 닉네임을 확인해주세요." />}
+      <h1 className="text-center text-xl font-bold text-app-text">방 생성하기</h1>
+      {error && <ErrorMessage message="방 생성에 실패했습니다. 다시 시도해주세요." />}
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
         <MapPlaceholder />
         <input
@@ -49,11 +59,11 @@ function JoinRoomFormPage() {
           type="submit"
           className="min-h-11 w-full rounded-lg bg-point-orange font-semibold text-white"
         >
-          입장하기
+          방 생성하기
         </button>
       </form>
     </div>
   )
 }
 
-export default JoinRoomFormPage
+export default CreateRoomPage

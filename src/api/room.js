@@ -1,7 +1,7 @@
 import api from './api'
 
-// 방 생성
-export function createRoom(payload) {
+// 방 생성 (백엔드가 빈 body도 허용하지 않아 기본값으로 빈 객체를 보낸다)
+export function createRoom(payload = {}) {
   return api.post('/api/rooms', payload)
 }
 
