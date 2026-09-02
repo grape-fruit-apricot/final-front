@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import useJoinRoom from '../hooks/useJoinRoom'
+import BackButton from '../components/common/BackButton'
 import MapPlaceholder from '../components/common/MapPlaceholder'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 import ErrorMessage from '../components/common/ErrorMessage'
@@ -32,7 +33,8 @@ function JoinRoomFormPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col justify-center gap-6 bg-main-navy p-6">
+    <div className="relative flex min-h-screen flex-col justify-center gap-6 bg-main-navy p-6">
+      <BackButton />
       <h1 className="text-center text-xl font-bold text-white">닉네임을 입력해주세요</h1>
       {error && <ErrorMessage message="참가에 실패했습니다. 닉네임을 확인해주세요." />}
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
