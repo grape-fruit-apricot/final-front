@@ -31,7 +31,7 @@ function JoinRoomPage() {
           value={roomUuid}
           onChange={(e) => setRoomUuid(e.target.value)}
           placeholder="방 코드"
-          className="min-h-11 w-full rounded-lg border border-main-navy px-4 text-app-text"
+          className="min-h-11 w-full rounded-lg border border-main-navy bg-white px-4 text-app-text"
         />
         <button
           type="submit"

@@ -43,7 +43,7 @@ function JoinRoomFormPage() {
           onChange={(e) => setNickname(e.target.value)}
           placeholder="닉네임"
           required
-          className="min-h-11 w-full rounded-lg border border-main-navy px-4 text-app-text"
+          className="min-h-11 w-full rounded-lg border border-main-navy bg-white px-4 text-app-text"
         />
         <button
           type="submit"
