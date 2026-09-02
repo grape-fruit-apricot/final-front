@@ -22,11 +22,12 @@ function CreateRoomPage() {
     setError(null)
     try {
       const room = await create()
-      await join(room.roomUuid, {
+      const participant = await join(room.roomUuid, {
         nickname,
         lat: location.lat,
         lng: location.lng,
       })
+      localStorage.setItem(`room:${room.roomUuid}:participantId`, participant.participantId)
       navigate(`/rooms/${room.roomUuid}`)
     } catch (err) {
       setError(err)

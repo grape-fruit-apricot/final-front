@@ -14,3 +14,8 @@ export function fetchRoom(roomUuid) {
 export function joinRoom(roomUuid, payload) {
   return api.post(`/api/rooms/${roomUuid}/participants`, payload)
 }
+
+// 참가자 목록 조회
+export function fetchParticipantList(roomUuid) {
+  return api.get(`/api/rooms/${roomUuid}/participants`)
+}

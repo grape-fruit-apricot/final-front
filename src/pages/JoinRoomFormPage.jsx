@@ -21,6 +21,7 @@ function JoinRoomFormPage() {
       lng: location.lng,
     }).catch(() => null)
     if (participant) {
+      localStorage.setItem(`room:${roomUuid}:participantId`, participant.participantId)
       navigate(`/rooms/${roomUuid}`)
     }
   }
