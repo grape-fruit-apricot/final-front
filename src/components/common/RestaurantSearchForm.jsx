@@ -6,6 +6,8 @@ import ErrorMessage from './ErrorMessage'
 // 검색은 LocationPicker 와 동일하게 카카오 SDK 의 장소 검색을 쓰므로 별도 API 가 필요 없다.
 const SEARCH_RADIUS_METERS = 5000
 const FOOD_CATEGORY_CODE = 'FD6'
+// 목록이 길어지면 고르기 어려워 상위 5건만 보여준다(카카오 SDK 허용 범위는 1~15).
+const MAX_SEARCH_RESULTS = 5
 
 function RestaurantSearchForm({ lat, lng, onAdd, isAdding }) {
   const placesRef = useRef(null)
@@ -32,7 +34,8 @@ function RestaurantSearchForm({ lat, lng, onAdd, isAdding }) {
       (results, status) => {
         setIsSearching(false)
         if (status === window.kakao.maps.services.Status.OK && results.length > 0) {
-          setPlaces(results)
+          // size 옵션으로 이미 5건만 받지만, SDK 가 옵션을 무시하는 경우를 대비해 한 번 더 자른다.
+          setPlaces(results.slice(0, MAX_SEARCH_RESULTS))
         } else {
           setPlaces([])
           setSearchError('검색 결과가 없습니다.')
@@ -42,6 +45,7 @@ function RestaurantSearchForm({ lat, lng, onAdd, isAdding }) {
         location: new window.kakao.maps.LatLng(lat, lng),
         radius: SEARCH_RADIUS_METERS,
         category_group_code: FOOD_CATEGORY_CODE,
+        size: MAX_SEARCH_RESULTS,
       }
     )
   }
