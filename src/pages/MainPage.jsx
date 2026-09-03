@@ -8,6 +8,7 @@ import useFetchSelectionList from '../hooks/useFetchSelectionList'
 import useCreateSelection from '../hooks/useCreateSelection'
 import useUpdateReady from '../hooks/useUpdateReady'
 import useFetchRouteResult from '../hooks/useFetchRouteResult'
+import useFetchModeVote from '../hooks/useFetchModeVote'
 import useRoomSocket from '../hooks/useRoomSocket'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 import ErrorMessage from '../components/common/ErrorMessage'
@@ -16,6 +17,7 @@ import RestaurantList from '../components/common/RestaurantList'
 import RestaurantSearchForm from '../components/common/RestaurantSearchForm'
 import ParticipantSelectionList from '../components/common/ParticipantSelectionList'
 import GameResult from '../components/common/GameResult'
+import ModeVote from '../components/common/ModeVote'
 import MidpointMap from '../components/map/MidpointMap'
 
 function MainPage() {
@@ -30,6 +32,7 @@ function MainPage() {
   const { create: createSelection, isLoading: isSelecting } = useCreateSelection()
   const { update: updateReady, isLoading: isReadying } = useUpdateReady()
   const { fetch: fetchRouteResult } = useFetchRouteResult()
+  const { fetch: fetchModeVote } = useFetchModeVote()
 
   const [participants, setParticipants] = useState([])
   const [midpoint, setMidpoint] = useState(null)
@@ -45,6 +48,9 @@ function MainPage() {
   const [result, setResult] = useState(null)
   const [isStarting, setIsStarting] = useState(false)
   const [startError, setStartError] = useState(null)
+  // 투표가 열리기 전에는 null. 열리면 서버가 보낸 현황 전체를 그대로 담는다.
+  const [modeVote, setModeVote] = useState(null)
+  const [isVoting, setIsVoting] = useState(false)
 
   useEffect(() => {
     // 방을 옮기면 이전 방의 응답이 늦게 도착해 새 방의 상태를 덮어쓸 수 있다.
@@ -75,6 +81,17 @@ function MainPage() {
             })
             .catch(() => {
               if (!isCancelled) setResult(null)
+            })
+        }
+        // MODE_SELECTED 는 투표 중, RESOLVING 은 게임이 뽑혔지만 아직 게임이 없는 상태다.
+        // 둘 다 투표 현황을 불러와야 화면이 복원된다.
+        if (room.stage === 'MODE_SELECTED' || room.stage === 'RESOLVING') {
+          return fetchModeVote(roomUuid)
+            .then((status) => {
+              if (!isCancelled) setModeVote(status)
+            })
+            .catch(() => {
+              if (!isCancelled) setModeVote(null)
             })
         }
       })
@@ -147,7 +164,19 @@ function MainPage() {
     'participants/ready': (list) => {
       setParticipants(list)
     },
-    // 방장이 시작하면 확정된 식당과 참가자별 경로가 모두에게 전달된다.
+    // 방장이 투표를 열거나 누군가 투표하면 갱신된 현황 전체가 온다.
+    // decidedMode 가 채워져 오면 전원 투표가 끝났다는 뜻이다.
+    mode: (status) => {
+      setModeVote(status)
+      setIsStarting(false)
+      setIsVoting(false)
+    },
+    'mode/error': (payload) => {
+      setStartError(payload?.message ?? '투표를 처리하지 못했습니다.')
+      setIsStarting(false)
+      setIsVoting(false)
+    },
+    // 무작위로 정해지면 서버가 이어서 경로까지 확정해 보내준다.
     result: (routeResult) => {
       setResult(routeResult)
       setIsStarting(false)
@@ -195,7 +224,30 @@ function MainPage() {
     })
   }
 
+  // 시작하기는 이제 결과를 바로 확정하지 않고 진행 방식 투표를 연다.
   const handleStart = () => {
+    setStartError(null)
+    setIsStarting(true)
+
+    if (!publish('/app/mode/start')) {
+      setIsStarting(false)
+      setStartError('연결이 끊겼습니다. 잠시 후 다시 시도해주세요.')
+    }
+  }
+
+  const handleVote = (voteMode) => {
+    setStartError(null)
+    setIsVoting(true)
+
+    if (!publish('/app/mode/vote', { voteMode })) {
+      setIsVoting(false)
+      setStartError('연결이 끊겼습니다. 잠시 후 다시 시도해주세요.')
+    }
+  }
+
+  // 게임이 뽑혔지만 아직 게임이 없다. 방을 막아두지 않도록 방장이 무작위로 넘길 수 있게 한다.
+  // 게임이 붙으면 이 버튼을 게임 시작으로 교체하면 된다.
+  const handleFallbackToRandom = () => {
     setStartError(null)
     setIsStarting(true)
 
@@ -240,6 +292,39 @@ function MainPage() {
             selections={selections}
             myParticipantId={myParticipantId}
           />
+        </div>
+      ) : modeVote ? (
+        <div className="mt-4 flex flex-col gap-3">
+          {startError && <ErrorMessage message={startError} />}
+
+          {modeVote.decidedMode === 'GAME' ? (
+            <>
+              <h2 className="text-center font-semibold text-white">게임으로 정해졌습니다</h2>
+              <p className="text-center text-sm text-white/70">
+                게임은 아직 준비 중입니다. 방장이 무작위로 진행할 수 있습니다.
+              </p>
+              {isHost && (
+                <button
+                  type="button"
+                  onClick={handleFallbackToRandom}
+                  disabled={isStarting}
+                  className="mt-4 min-h-11 w-full rounded-lg bg-point-orange font-semibold text-white disabled:bg-white/30 disabled:text-white/60"
+                >
+                  {isStarting ? '결과 뽑는 중...' : '무작위로 진행하기'}
+                </button>
+              )}
+            </>
+          ) : modeVote.decidedMode === 'RANDOM' ? (
+            <p className="text-center text-white">무작위로 정하는 중입니다...</p>
+          ) : (
+            <ModeVote
+              status={modeVote}
+              participants={participants}
+              myParticipantId={myParticipantId}
+              onVote={handleVote}
+              isVoting={isVoting}
+            />
+          )}
         </div>
       ) : midpoint ? (
         <div className="mt-4 flex flex-col gap-3">
