@@ -62,8 +62,9 @@ function MainPage() {
           })
         }
         // 이미 결과가 확정된 방이면 새로고침해도 결과 화면이 유지되도록 복원한다.
+        // 결과 조회까지 기다렸다가 로딩을 끝내야, 중간지점 화면이 한 프레임 떴다 사라지지 않는다.
         if (room.stage === 'RESOLVED') {
-          fetchRouteResult(roomUuid)
+          return fetchRouteResult(roomUuid)
             .then(setResult)
             .catch(() => setResult(null))
         }

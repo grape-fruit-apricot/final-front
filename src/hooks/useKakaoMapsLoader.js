@@ -10,18 +10,28 @@ export function useKakaoMapsLoader(onReady, deps, { libraries, enabled = true } 
   useEffect(() => {
     if (!KAKAO_JS_KEY || !enabled) return
 
+    // script 태그를 지워도 이미 시작된 다운로드는 취소되지 않아 onload가 그대로 실행된다.
+    // 그 사이 컴포넌트가 사라졌다면 ref가 null이라 지도를 만들다 에러가 나므로,
+    // 정리된 뒤에는 onReady 자체를 실행하지 않는다.
+    let isCancelled = false
+
     const script = document.createElement('script')
     script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_JS_KEY}${
       libraries ? `&libraries=${libraries}` : ''
     }&autoload=false`
     script.async = true
     script.onload = () => {
-      window.kakao.maps.load(onReady)
+      if (isCancelled) return
+      window.kakao.maps.load(() => {
+        if (isCancelled) return
+        onReady()
+      })
     }
     document.head.appendChild(script)
 
     return () => {
-      document.head.removeChild(script)
+      isCancelled = true
+      script.remove()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps)
