@@ -19,8 +19,3 @@ export function joinRoom(roomUuid, payload) {
 export function fetchParticipantList(roomUuid) {
   return api.get(`/api/rooms/${roomUuid}/participants`)
 }
-
-// 중간지점 계산 (방장만 호출 가능, 백엔드에서 participantId로 검증)
-export function createMidpoint(roomUuid, participantId) {
-  return api.post(`/api/rooms/${roomUuid}/midpoint`, null, { params: { participantId } })
-}
