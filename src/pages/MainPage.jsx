@@ -4,6 +4,8 @@ import useFetchParticipantList from '../hooks/useFetchParticipantList'
 import useFetchRoom from '../hooks/useFetchRoom'
 import useFetchRestaurantList from '../hooks/useFetchRestaurantList'
 import useCreateRestaurant from '../hooks/useCreateRestaurant'
+import useFetchSelectionList from '../hooks/useFetchSelectionList'
+import useCreateSelection from '../hooks/useCreateSelection'
 import useRoomSocket from '../hooks/useRoomSocket'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 import ErrorMessage from '../components/common/ErrorMessage'
@@ -20,15 +22,19 @@ function MainPage() {
   const { fetch: fetchRoomInfo } = useFetchRoom()
   const { fetch: fetchRestaurants } = useFetchRestaurantList()
   const { create: createRestaurant, isLoading: isAdding } = useCreateRestaurant()
+  const { fetch: fetchSelections } = useFetchSelectionList()
+  const { create: createSelection, isLoading: isSelecting } = useCreateSelection()
 
   const [participants, setParticipants] = useState([])
   const [midpoint, setMidpoint] = useState(null)
   const [restaurants, setRestaurants] = useState([])
+  const [selections, setSelections] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState(null)
   const [isFinding, setIsFinding] = useState(false)
   const [findError, setFindError] = useState(null)
   const [addError, setAddError] = useState(null)
+  const [selectError, setSelectError] = useState(null)
 
   useEffect(() => {
     setIsLoading(true)
@@ -60,6 +66,10 @@ function MainPage() {
     fetchRestaurants(roomUuid)
       .then(setRestaurants)
       .catch(() => setRestaurants([]))
+
+    fetchSelections(roomUuid)
+      .then(setSelections)
+      .catch(() => setSelections([]))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasMidpoint, roomUuid])
 
@@ -80,6 +90,10 @@ function MainPage() {
     // 누군가 식당을 추가하면 서버가 갱신된 목록 전체를 보내준다.
     restaurants: (list) => {
       setRestaurants(list)
+    },
+    // 누군가 식당을 선택하면 갱신된 선택 현황 전체가 온다.
+    selections: (list) => {
+      setSelections(list)
     },
   })
 
@@ -102,6 +116,14 @@ function MainPage() {
       participantId: Number(myParticipantId),
     }).catch((err) => {
       setAddError(err?.response?.data?.message ?? '식당을 추가하지 못했습니다.')
+    })
+  }
+
+  // 선택 결과도 소켓으로 갱신된 현황이 돌아오므로 여기서 다시 조회하지 않는다.
+  const handleSelectRestaurant = async (restaurantId) => {
+    setSelectError(null)
+    await createSelection(roomUuid, myParticipantId, restaurantId).catch((err) => {
+      setSelectError(err?.response?.data?.message ?? '식당을 선택하지 못했습니다.')
     })
   }
 
@@ -134,7 +156,17 @@ function MainPage() {
             isAdding={isAdding}
           />
           {addError && <ErrorMessage message={addError} />}
-          <RestaurantList restaurants={restaurants} />
+          <p className="text-sm text-white/70">
+            {selections.length}/{participants.length}명 선택 완료
+          </p>
+          {selectError && <ErrorMessage message={selectError} />}
+          <RestaurantList
+            restaurants={restaurants}
+            selections={selections}
+            myParticipantId={myParticipantId}
+            onSelect={handleSelectRestaurant}
+            isSelecting={isSelecting}
+          />
         </div>
       ) : (
         <>

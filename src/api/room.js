@@ -29,3 +29,13 @@ export function fetchRestaurantList(roomUuid) {
 export function createRestaurant(roomUuid, payload) {
   return api.post(`/api/rooms/${roomUuid}/restaurants`, payload)
 }
+
+// 방 전체의 식당 선택 현황 조회
+export function fetchSelectionList(roomUuid) {
+  return api.get(`/api/rooms/${roomUuid}/selections`)
+}
+
+// 참가자가 식당 하나를 선택 (다시 선택하면 기존 선택을 대체)
+export function createSelection(roomUuid, participantId, restaurantId) {
+  return api.post(`/api/rooms/${roomUuid}/participants/${participantId}/selection`, { restaurantId })
+}
