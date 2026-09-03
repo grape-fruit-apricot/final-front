@@ -30,6 +30,11 @@ export function createRestaurant(roomUuid, payload) {
   return api.post(`/api/rooms/${roomUuid}/restaurants`, payload)
 }
 
+// 게임 시작 전 준비 완료 표시
+export function updateReady(roomUuid, participantId) {
+  return api.patch(`/api/rooms/${roomUuid}/participants/${participantId}/ready`)
+}
+
 // 방 전체의 식당 선택 현황 조회
 export function fetchSelectionList(roomUuid) {
   return api.get(`/api/rooms/${roomUuid}/selections`)

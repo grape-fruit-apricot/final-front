@@ -6,12 +6,14 @@ import useFetchRestaurantList from '../hooks/useFetchRestaurantList'
 import useCreateRestaurant from '../hooks/useCreateRestaurant'
 import useFetchSelectionList from '../hooks/useFetchSelectionList'
 import useCreateSelection from '../hooks/useCreateSelection'
+import useUpdateReady from '../hooks/useUpdateReady'
 import useRoomSocket from '../hooks/useRoomSocket'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 import ErrorMessage from '../components/common/ErrorMessage'
 import ParticipantList from '../components/common/ParticipantList'
 import RestaurantList from '../components/common/RestaurantList'
 import RestaurantSearchForm from '../components/common/RestaurantSearchForm'
+import ParticipantSelectionList from '../components/common/ParticipantSelectionList'
 import MidpointMap from '../components/map/MidpointMap'
 
 function MainPage() {
@@ -24,6 +26,7 @@ function MainPage() {
   const { create: createRestaurant, isLoading: isAdding } = useCreateRestaurant()
   const { fetch: fetchSelections } = useFetchSelectionList()
   const { create: createSelection, isLoading: isSelecting } = useCreateSelection()
+  const { update: updateReady, isLoading: isReadying } = useUpdateReady()
 
   const [participants, setParticipants] = useState([])
   const [midpoint, setMidpoint] = useState(null)
@@ -35,6 +38,7 @@ function MainPage() {
   const [findError, setFindError] = useState(null)
   const [addError, setAddError] = useState(null)
   const [selectError, setSelectError] = useState(null)
+  const [readyError, setReadyError] = useState(null)
 
   useEffect(() => {
     setIsLoading(true)
@@ -95,6 +99,10 @@ function MainPage() {
     selections: (list) => {
       setSelections(list)
     },
+    // 누군가 준비를 마치면 갱신된 참가자 목록 전체가 온다(입장 토픽은 새 참가자 1명만 보낸다).
+    'participants/ready': (list) => {
+      setParticipants(list)
+    },
   })
 
   // 방장 여부는 서버가 소켓 세션의 participantId로 다시 확인하므로, 여기서는 버튼 노출만 판단한다.
@@ -127,10 +135,25 @@ function MainPage() {
     })
   }
 
-  const isHost = participants.some(
-    (participant) =>
-      String(participant.participantId) === String(myParticipantId) && participant.isHost === 'Y'
+  const handleReady = async () => {
+    setReadyError(null)
+    await updateReady(roomUuid, myParticipantId).catch((err) => {
+      setReadyError(err?.response?.data?.message ?? '준비 상태를 바꾸지 못했습니다.')
+    })
+  }
+
+  const me = participants.find(
+    (participant) => String(participant.participantId) === String(myParticipantId)
   )
+  const isHost = me?.isHost === 'Y'
+  const isReady = me?.isReady === 'Y'
+
+  // 내가 식당을 고르면 다른 참가자들의 선택을 지켜보는 화면으로 넘어간다.
+  const hasSelected = selections.some(
+    (selection) => String(selection.participantId) === String(myParticipantId)
+  )
+  const isEveryoneReady =
+    participants.length > 0 && participants.every((participant) => participant.isReady === 'Y')
 
   if (isLoading) {
     return <LoadingSpinner />
@@ -146,27 +169,60 @@ function MainPage() {
 
       {midpoint ? (
         <div className="mt-4 flex flex-col gap-3">
-          <p className="text-center text-white">여기가 우리 만남의 중간 지점이에요!</p>
           <MidpointMap name={midpoint.name} lat={midpoint.lat} lng={midpoint.lng} />
-          <h2 className="mt-2 font-semibold text-white">주변 식당</h2>
-          <RestaurantSearchForm
-            lat={midpoint.lat}
-            lng={midpoint.lng}
-            onAdd={handleAddRestaurant}
-            isAdding={isAdding}
-          />
-          {addError && <ErrorMessage message={addError} />}
-          <p className="text-sm text-white/70">
-            {selections.length}/{participants.length}명 선택 완료
-          </p>
-          {selectError && <ErrorMessage message={selectError} />}
-          <RestaurantList
-            restaurants={restaurants}
-            selections={selections}
-            myParticipantId={myParticipantId}
-            onSelect={handleSelectRestaurant}
-            isSelecting={isSelecting}
-          />
+
+          {hasSelected ? (
+            <>
+              <h2 className="mt-2 text-center font-semibold text-white">참가자들이 고른 식당</h2>
+              <ParticipantSelectionList
+                participants={participants}
+                selections={selections}
+                restaurants={restaurants}
+              />
+              {readyError && <ErrorMessage message={readyError} />}
+
+              {isHost ? (
+                <button
+                  type="button"
+                  disabled={!isEveryoneReady}
+                  className="mt-4 min-h-11 w-full rounded-lg bg-point-orange font-semibold text-white disabled:bg-white/30 disabled:text-white/60"
+                >
+                  시작하기
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleReady}
+                  disabled={isReady || isReadying}
+                  className="mt-4 min-h-11 w-full rounded-lg bg-point-orange font-semibold text-white disabled:bg-white/30 disabled:text-white/60"
+                >
+                  {isReady ? '준비중' : '준비하기'}
+                </button>
+              )}
+            </>
+          ) : (
+            <>
+              <h2 className="mt-2 font-semibold text-white">주변 식당</h2>
+              <RestaurantSearchForm
+                lat={midpoint.lat}
+                lng={midpoint.lng}
+                onAdd={handleAddRestaurant}
+                isAdding={isAdding}
+              />
+              {addError && <ErrorMessage message={addError} />}
+              <p className="text-sm text-white/70">
+                {selections.length}/{participants.length}명 선택 완료
+              </p>
+              {selectError && <ErrorMessage message={selectError} />}
+              <RestaurantList
+                restaurants={restaurants}
+                selections={selections}
+                myParticipantId={myParticipantId}
+                onSelect={handleSelectRestaurant}
+                isSelecting={isSelecting}
+              />
+            </>
+          )}
         </div>
       ) : (
         <>
