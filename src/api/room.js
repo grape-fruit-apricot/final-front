@@ -24,3 +24,8 @@ export function fetchParticipantList(roomUuid) {
 export function fetchRestaurantList(roomUuid) {
   return api.get(`/api/rooms/${roomUuid}/restaurants`)
 }
+
+// 참가자가 검색해서 찾은 식당을 방 목록에 추가
+export function createRestaurant(roomUuid, payload) {
+  return api.post(`/api/rooms/${roomUuid}/restaurants`, payload)
+}

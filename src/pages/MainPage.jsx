@@ -3,11 +3,13 @@ import { useParams } from 'react-router-dom'
 import useFetchParticipantList from '../hooks/useFetchParticipantList'
 import useFetchRoom from '../hooks/useFetchRoom'
 import useFetchRestaurantList from '../hooks/useFetchRestaurantList'
+import useCreateRestaurant from '../hooks/useCreateRestaurant'
 import useRoomSocket from '../hooks/useRoomSocket'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 import ErrorMessage from '../components/common/ErrorMessage'
 import ParticipantList from '../components/common/ParticipantList'
 import RestaurantList from '../components/common/RestaurantList'
+import RestaurantSearchForm from '../components/common/RestaurantSearchForm'
 import MidpointMap from '../components/map/MidpointMap'
 
 function MainPage() {
@@ -17,6 +19,7 @@ function MainPage() {
   const { fetch: fetchParticipants } = useFetchParticipantList()
   const { fetch: fetchRoomInfo } = useFetchRoom()
   const { fetch: fetchRestaurants } = useFetchRestaurantList()
+  const { create: createRestaurant, isLoading: isAdding } = useCreateRestaurant()
 
   const [participants, setParticipants] = useState([])
   const [midpoint, setMidpoint] = useState(null)
@@ -25,6 +28,7 @@ function MainPage() {
   const [loadError, setLoadError] = useState(null)
   const [isFinding, setIsFinding] = useState(false)
   const [findError, setFindError] = useState(null)
+  const [addError, setAddError] = useState(null)
 
   useEffect(() => {
     setIsLoading(true)
@@ -73,6 +77,10 @@ function MainPage() {
       setFindError(payload?.message ?? '중간지점을 찾지 못했습니다. 잠시 후 다시 시도해주세요.')
       setIsFinding(false)
     },
+    // 누군가 식당을 추가하면 서버가 갱신된 목록 전체를 보내준다.
+    restaurants: (list) => {
+      setRestaurants(list)
+    },
   })
 
   // 방장 여부는 서버가 소켓 세션의 participantId로 다시 확인하므로, 여기서는 버튼 노출만 판단한다.
@@ -84,6 +92,17 @@ function MainPage() {
       setIsFinding(false)
       setFindError('연결이 끊겼습니다. 잠시 후 다시 시도해주세요.')
     }
+  }
+
+  // 추가에 성공하면 갱신된 목록이 소켓으로 돌아오므로 여기서 목록을 다시 조회하지 않는다.
+  const handleAddRestaurant = async (payload) => {
+    setAddError(null)
+    await createRestaurant(roomUuid, {
+      ...payload,
+      participantId: Number(myParticipantId),
+    }).catch((err) => {
+      setAddError(err?.response?.data?.message ?? '식당을 추가하지 못했습니다.')
+    })
   }
 
   const isHost = participants.some(
@@ -108,6 +127,13 @@ function MainPage() {
           <p className="text-center text-white">여기가 우리 만남의 중간 지점이에요!</p>
           <MidpointMap name={midpoint.name} lat={midpoint.lat} lng={midpoint.lng} />
           <h2 className="mt-2 font-semibold text-white">주변 식당</h2>
+          <RestaurantSearchForm
+            lat={midpoint.lat}
+            lng={midpoint.lng}
+            onAdd={handleAddRestaurant}
+            isAdding={isAdding}
+          />
+          {addError && <ErrorMessage message={addError} />}
           <RestaurantList restaurants={restaurants} />
         </div>
       ) : (
