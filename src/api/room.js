@@ -35,6 +35,11 @@ export function fetchRouteResult(roomUuid) {
   return api.get(`/api/rooms/${roomUuid}/routes`)
 }
 
+// 진행 방식(게임/무작위) 투표 현황 조회. 투표 자체는 소켓으로만 보낸다.
+export function fetchModeVoteStatus(roomUuid) {
+  return api.get(`/api/rooms/${roomUuid}/votes`)
+}
+
 // 게임 시작 전 준비 완료 표시
 export function updateReady(roomUuid, participantId) {
   return api.patch(`/api/rooms/${roomUuid}/participants/${participantId}/ready`)
