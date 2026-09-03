@@ -9,12 +9,15 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 // 토픽을 한 커넥션에서 모두 구독한다(토픽마다 별도 훅/커넥션을 쓰면 소켓이 여러 개 열려 자원 낭비가 된다).
 //
 // subscriptions 예: { participants: onParticipantJoined, midpoint: onMidpointFound }
+// key가 빈 문자열('')이면 접미사 없이 방 루트 토픽 /topic/room/{roomUuid} 를 구독한다(채팅 메시지가 여기로 온다).
 //
-// 주의: roomUuid/participantId만 바뀔 때 재연결하고 subscriptions 콜백은 연결 시점의
+// onConnect: 소켓이 (재)연결될 때마다 호출된다. 재연결 후 놓친 데이터를 따라잡는 용도.
+//
+// 주의: roomUuid/participantId만 바뀔 때 재연결하고 subscriptions/onConnect 콜백은 연결 시점의
 // 클로저로 캡처해두기 때문에(불필요한 재연결 방지), 콜백 안에서는 항상
-// setState(prev => ...) 형태의 함수형 업데이트만 써야 안전하다. 콜백이 바깥 상태를
+// setState(prev => ...) 형태의 함수형 업데이트나 ref만 써야 안전하다. 콜백이 바깥 상태를
 // 직접 참조하면 오래된 값을 참조하는 stale closure 버그가 생길 수 있다.
-export function useRoomSocket(roomUuid, participantId, subscriptions) {
+export function useRoomSocket(roomUuid, participantId, subscriptions, onConnect) {
   const clientRef = useRef(null)
 
   useEffect(() => {
@@ -28,10 +31,14 @@ export function useRoomSocket(roomUuid, participantId, subscriptions) {
       },
       onConnect: () => {
         Object.entries(subscriptions).forEach(([key, handler]) => {
-          client.subscribe(`/topic/room/${roomUuid}/${key}`, (message) => {
+          const topic = key ? `/topic/room/${roomUuid}/${key}` : `/topic/room/${roomUuid}`
+          client.subscribe(topic, (message) => {
             handler(JSON.parse(message.body))
           })
         })
+        if (onConnect) {
+          onConnect()
+        }
       },
     })
 
