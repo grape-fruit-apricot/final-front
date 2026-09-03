@@ -15,13 +15,9 @@ function RestaurantSearchForm({ lat, lng, onAdd, isAdding }) {
   const [isSearching, setIsSearching] = useState(false)
   const [searchError, setSearchError] = useState(null)
 
-  useKakaoMapsLoader(
-    () => {
-      placesRef.current = new window.kakao.maps.services.Places()
-    },
-    [],
-    { libraries: 'services' }
-  )
+  useKakaoMapsLoader(() => {
+    placesRef.current = new window.kakao.maps.services.Places()
+  }, [])
 
   const handleSearch = () => {
     const trimmed = keyword.trim()

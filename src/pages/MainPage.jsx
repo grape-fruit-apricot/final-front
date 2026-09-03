@@ -47,10 +47,15 @@ function MainPage() {
   const [startError, setStartError] = useState(null)
 
   useEffect(() => {
+    // 방을 옮기면 이전 방의 응답이 늦게 도착해 새 방의 상태를 덮어쓸 수 있다.
+    let isCancelled = false
+
     setIsLoading(true)
     setLoadError(null)
     Promise.all([fetchParticipants(roomUuid), fetchRoomInfo(roomUuid)])
       .then(([participantList, room]) => {
+        if (isCancelled) return
+
         setParticipants(participantList)
         // stage 값을 열거하면 RESOLVING/RESOLVED 로 넘어간 방에서 지도가 복원되지 않는다.
         // 백엔드와 같은 기준인 좌표 유무로 판단한다.
@@ -62,14 +67,27 @@ function MainPage() {
           })
         }
         // 이미 결과가 확정된 방이면 새로고침해도 결과 화면이 유지되도록 복원한다.
+        // 결과 조회까지 기다렸다가 로딩을 끝내야, 중간지점 화면이 한 프레임 떴다 사라지지 않는다.
         if (room.stage === 'RESOLVED') {
-          fetchRouteResult(roomUuid)
-            .then(setResult)
-            .catch(() => setResult(null))
+          return fetchRouteResult(roomUuid)
+            .then((routeResult) => {
+              if (!isCancelled) setResult(routeResult)
+            })
+            .catch(() => {
+              if (!isCancelled) setResult(null)
+            })
         }
       })
-      .catch((err) => setLoadError(err))
-      .finally(() => setIsLoading(false))
+      .catch((err) => {
+        if (!isCancelled) setLoadError(err)
+      })
+      .finally(() => {
+        if (!isCancelled) setIsLoading(false)
+      })
+
+    return () => {
+      isCancelled = true
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomUuid])
 
@@ -79,13 +97,27 @@ function MainPage() {
   useEffect(() => {
     if (!hasMidpoint) return
 
+    let isCancelled = false
+
     fetchRestaurants(roomUuid)
-      .then(setRestaurants)
-      .catch(() => setRestaurants([]))
+      .then((list) => {
+        if (!isCancelled) setRestaurants(list)
+      })
+      .catch(() => {
+        if (!isCancelled) setRestaurants([])
+      })
 
     fetchSelections(roomUuid)
-      .then(setSelections)
-      .catch(() => setSelections([]))
+      .then((list) => {
+        if (!isCancelled) setSelections(list)
+      })
+      .catch(() => {
+        if (!isCancelled) setSelections([])
+      })
+
+    return () => {
+      isCancelled = true
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasMidpoint, roomUuid])
 
