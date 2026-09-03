@@ -19,3 +19,28 @@ export function joinRoom(roomUuid, payload) {
 export function fetchParticipantList(roomUuid) {
   return api.get(`/api/rooms/${roomUuid}/participants`)
 }
+
+// 방에 저장된 식당 목록 조회 (중간지점 확정 시 자동 수집된 것 + 참가자가 추가한 것)
+export function fetchRestaurantList(roomUuid) {
+  return api.get(`/api/rooms/${roomUuid}/restaurants`)
+}
+
+// 참가자가 검색해서 찾은 식당을 방 목록에 추가
+export function createRestaurant(roomUuid, payload) {
+  return api.post(`/api/rooms/${roomUuid}/restaurants`, payload)
+}
+
+// 게임 시작 전 준비 완료 표시
+export function updateReady(roomUuid, participantId) {
+  return api.patch(`/api/rooms/${roomUuid}/participants/${participantId}/ready`)
+}
+
+// 방 전체의 식당 선택 현황 조회
+export function fetchSelectionList(roomUuid) {
+  return api.get(`/api/rooms/${roomUuid}/selections`)
+}
+
+// 참가자가 식당 하나를 선택 (다시 선택하면 기존 선택을 대체)
+export function createSelection(roomUuid, participantId, restaurantId) {
+  return api.post(`/api/rooms/${roomUuid}/participants/${participantId}/selection`, { restaurantId })
+}
