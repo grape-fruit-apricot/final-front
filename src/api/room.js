@@ -49,3 +49,10 @@ export function fetchSelectionList(roomUuid) {
 export function createSelection(roomUuid, participantId, restaurantId) {
   return api.post(`/api/rooms/${roomUuid}/participants/${participantId}/selection`, { restaurantId })
 }
+
+// 방 채팅 내역 조회. afterMessageId 를 주면 그 이후 메시지만 (재연결 후 놓친 구간 따라잡기용)
+export function fetchMessageList(roomUuid, afterMessageId) {
+  return api.get(`/api/rooms/${roomUuid}/messages`, {
+    params: afterMessageId ? { afterMessageId } : undefined,
+  })
+}
