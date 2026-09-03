@@ -37,25 +37,21 @@ function LocationPicker({ value, onChange, height = 192 }) {
     onChangeRef.current({ lat, lng })
   }
 
-  useKakaoMapsLoader(
-    () => {
-      const map = new window.kakao.maps.Map(containerRef.current, {
-        center: new window.kakao.maps.LatLng(DEFAULT_CENTER.lat, DEFAULT_CENTER.lng),
-        level: 5,
-      })
-      mapRef.current = map
-      geocoderRef.current = new window.kakao.maps.services.Geocoder()
-      placesRef.current = new window.kakao.maps.services.Places()
+  useKakaoMapsLoader(() => {
+    const map = new window.kakao.maps.Map(containerRef.current, {
+      center: new window.kakao.maps.LatLng(DEFAULT_CENTER.lat, DEFAULT_CENTER.lng),
+      level: 5,
+    })
+    mapRef.current = map
+    geocoderRef.current = new window.kakao.maps.services.Geocoder()
+    placesRef.current = new window.kakao.maps.services.Places()
 
-      window.kakao.maps.event.addListener(map, 'click', (mouseEvent) => {
-        const latlng = mouseEvent.latLng
-        placeMarker(latlng)
-        onChangeRef.current({ lat: latlng.getLat(), lng: latlng.getLng() })
-      })
-    },
-    [],
-    { libraries: 'services' }
-  )
+    window.kakao.maps.event.addListener(map, 'click', (mouseEvent) => {
+      const latlng = mouseEvent.latLng
+      placeMarker(latlng)
+      onChangeRef.current({ lat: latlng.getLat(), lng: latlng.getLng() })
+    })
+  }, [])
 
   function handleSearch() {
     const keyword = query.trim()
