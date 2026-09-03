@@ -19,3 +19,8 @@ export function joinRoom(roomUuid, payload) {
 export function fetchParticipantList(roomUuid) {
   return api.get(`/api/rooms/${roomUuid}/participants`)
 }
+
+// 방에 저장된 식당 목록 조회 (중간지점 확정 시 자동 수집된 것 + 참가자가 추가한 것)
+export function fetchRestaurantList(roomUuid) {
+  return api.get(`/api/rooms/${roomUuid}/restaurants`)
+}

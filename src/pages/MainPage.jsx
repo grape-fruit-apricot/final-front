@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import useFetchParticipantList from '../hooks/useFetchParticipantList'
 import useFetchRoom from '../hooks/useFetchRoom'
+import useFetchRestaurantList from '../hooks/useFetchRestaurantList'
 import useRoomSocket from '../hooks/useRoomSocket'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 import ErrorMessage from '../components/common/ErrorMessage'
 import ParticipantList from '../components/common/ParticipantList'
+import RestaurantList from '../components/common/RestaurantList'
 import MidpointMap from '../components/map/MidpointMap'
 
 function MainPage() {
@@ -14,9 +16,11 @@ function MainPage() {
 
   const { fetch: fetchParticipants } = useFetchParticipantList()
   const { fetch: fetchRoomInfo } = useFetchRoom()
+  const { fetch: fetchRestaurants } = useFetchRestaurantList()
 
   const [participants, setParticipants] = useState([])
   const [midpoint, setMidpoint] = useState(null)
+  const [restaurants, setRestaurants] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState(null)
   const [isFinding, setIsFinding] = useState(false)
@@ -42,6 +46,18 @@ function MainPage() {
       .finally(() => setIsLoading(false))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomUuid])
+
+  // 중간지점이 생기면(새로고침 복원이든 소켓 브로드캐스트든) 그 주변 식당 목록을 불러온다.
+  // midpoint 객체는 매번 새로 만들어지므로 존재 여부만 의존성으로 둔다.
+  const hasMidpoint = midpoint != null
+  useEffect(() => {
+    if (!hasMidpoint) return
+
+    fetchRestaurants(roomUuid)
+      .then(setRestaurants)
+      .catch(() => setRestaurants([]))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasMidpoint, roomUuid])
 
   const { publish } = useRoomSocket(roomUuid, myParticipantId, {
     participants: (newParticipant) => {
@@ -91,6 +107,8 @@ function MainPage() {
         <div className="mt-4 flex flex-col gap-3">
           <p className="text-center text-white">여기가 우리 만남의 중간 지점이에요!</p>
           <MidpointMap name={midpoint.name} lat={midpoint.lat} lng={midpoint.lng} />
+          <h2 className="mt-2 font-semibold text-white">주변 식당</h2>
+          <RestaurantList restaurants={restaurants} />
         </div>
       ) : (
         <>
