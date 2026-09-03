@@ -30,6 +30,11 @@ export function createRestaurant(roomUuid, payload) {
   return api.post(`/api/rooms/${roomUuid}/restaurants`, payload)
 }
 
+// 확정된 결과(선정 식당 + 참가자별 경로) 조회. 확정 전에는 404가 돌아온다.
+export function fetchRouteResult(roomUuid) {
+  return api.get(`/api/rooms/${roomUuid}/routes`)
+}
+
 // 게임 시작 전 준비 완료 표시
 export function updateReady(roomUuid, participantId) {
   return api.patch(`/api/rooms/${roomUuid}/participants/${participantId}/ready`)

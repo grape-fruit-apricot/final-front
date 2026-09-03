@@ -7,6 +7,7 @@ import useCreateRestaurant from '../hooks/useCreateRestaurant'
 import useFetchSelectionList from '../hooks/useFetchSelectionList'
 import useCreateSelection from '../hooks/useCreateSelection'
 import useUpdateReady from '../hooks/useUpdateReady'
+import useFetchRouteResult from '../hooks/useFetchRouteResult'
 import useRoomSocket from '../hooks/useRoomSocket'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 import ErrorMessage from '../components/common/ErrorMessage'
@@ -14,6 +15,7 @@ import ParticipantList from '../components/common/ParticipantList'
 import RestaurantList from '../components/common/RestaurantList'
 import RestaurantSearchForm from '../components/common/RestaurantSearchForm'
 import ParticipantSelectionList from '../components/common/ParticipantSelectionList'
+import GameResult from '../components/common/GameResult'
 import MidpointMap from '../components/map/MidpointMap'
 
 function MainPage() {
@@ -27,6 +29,7 @@ function MainPage() {
   const { fetch: fetchSelections } = useFetchSelectionList()
   const { create: createSelection, isLoading: isSelecting } = useCreateSelection()
   const { update: updateReady, isLoading: isReadying } = useUpdateReady()
+  const { fetch: fetchRouteResult } = useFetchRouteResult()
 
   const [participants, setParticipants] = useState([])
   const [midpoint, setMidpoint] = useState(null)
@@ -39,6 +42,9 @@ function MainPage() {
   const [addError, setAddError] = useState(null)
   const [selectError, setSelectError] = useState(null)
   const [readyError, setReadyError] = useState(null)
+  const [result, setResult] = useState(null)
+  const [isStarting, setIsStarting] = useState(false)
+  const [startError, setStartError] = useState(null)
 
   useEffect(() => {
     setIsLoading(true)
@@ -54,6 +60,12 @@ function MainPage() {
             lat: room.midpointLat,
             lng: room.midpointLng,
           })
+        }
+        // 이미 결과가 확정된 방이면 새로고침해도 결과 화면이 유지되도록 복원한다.
+        if (room.stage === 'RESOLVED') {
+          fetchRouteResult(roomUuid)
+            .then(setResult)
+            .catch(() => setResult(null))
         }
       })
       .catch((err) => setLoadError(err))
@@ -103,6 +115,15 @@ function MainPage() {
     'participants/ready': (list) => {
       setParticipants(list)
     },
+    // 방장이 시작하면 확정된 식당과 참가자별 경로가 모두에게 전달된다.
+    result: (routeResult) => {
+      setResult(routeResult)
+      setIsStarting(false)
+    },
+    'result/error': (payload) => {
+      setStartError(payload?.message ?? '결과를 확정하지 못했습니다.')
+      setIsStarting(false)
+    },
   })
 
   // 방장 여부는 서버가 소켓 세션의 participantId로 다시 확인하므로, 여기서는 버튼 노출만 판단한다.
@@ -142,6 +163,16 @@ function MainPage() {
     })
   }
 
+  const handleStart = () => {
+    setStartError(null)
+    setIsStarting(true)
+
+    if (!publish('/app/result/find')) {
+      setIsStarting(false)
+      setStartError('연결이 끊겼습니다. 잠시 후 다시 시도해주세요.')
+    }
+  }
+
   const me = participants.find(
     (participant) => String(participant.participantId) === String(myParticipantId)
   )
@@ -152,8 +183,10 @@ function MainPage() {
   const hasSelected = selections.some(
     (selection) => String(selection.participantId) === String(myParticipantId)
   )
-  const isEveryoneReady =
-    participants.length > 0 && participants.every((participant) => participant.isReady === 'Y')
+  // 방장에게는 준비 버튼이 없으므로(피그마상 시작하기만 있다) 판정에서 제외한다.
+  const isEveryoneReady = participants
+    .filter((participant) => participant.isHost !== 'Y')
+    .every((participant) => participant.isReady === 'Y')
 
   if (isLoading) {
     return <LoadingSpinner />
@@ -167,7 +200,16 @@ function MainPage() {
     <div className="min-h-screen bg-main-navy p-4">
       <h1 className="text-lg font-semibold text-white">진행</h1>
 
-      {midpoint ? (
+      {result ? (
+        <div className="mt-4">
+          <GameResult
+            result={result}
+            participants={participants}
+            selections={selections}
+            myParticipantId={myParticipantId}
+          />
+        </div>
+      ) : midpoint ? (
         <div className="mt-4 flex flex-col gap-3">
           <MidpointMap name={midpoint.name} lat={midpoint.lat} lng={midpoint.lng} />
 
@@ -181,13 +223,16 @@ function MainPage() {
               />
               {readyError && <ErrorMessage message={readyError} />}
 
+              {startError && <ErrorMessage message={startError} />}
+
               {isHost ? (
                 <button
                   type="button"
-                  disabled={!isEveryoneReady}
+                  onClick={handleStart}
+                  disabled={!isEveryoneReady || isStarting}
                   className="mt-4 min-h-11 w-full rounded-lg bg-point-orange font-semibold text-white disabled:bg-white/30 disabled:text-white/60"
                 >
-                  시작하기
+                  {isStarting ? '결과 뽑는 중...' : '시작하기'}
                 </button>
               ) : (
                 <button
