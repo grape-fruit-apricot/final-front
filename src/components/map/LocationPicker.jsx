@@ -37,6 +37,16 @@ function LocationPicker({ value, onChange, height = 192 }) {
     onChangeRef.current({ lat, lng })
   }
 
+  // 지도에 건 클릭 리스너는 화면을 떠날 때 직접 떼어내야 한다(카카오 SDK에 지도 파기 API가 없다).
+  const clickListenerRef = useRef(null)
+  useEffect(() => {
+    return () => {
+      if (mapRef.current && clickListenerRef.current) {
+        window.kakao.maps.event.removeListener(mapRef.current, 'click', clickListenerRef.current)
+      }
+    }
+  }, [])
+
   useKakaoMapsLoader(() => {
     const map = new window.kakao.maps.Map(containerRef.current, {
       center: new window.kakao.maps.LatLng(DEFAULT_CENTER.lat, DEFAULT_CENTER.lng),
@@ -46,11 +56,12 @@ function LocationPicker({ value, onChange, height = 192 }) {
     geocoderRef.current = new window.kakao.maps.services.Geocoder()
     placesRef.current = new window.kakao.maps.services.Places()
 
-    window.kakao.maps.event.addListener(map, 'click', (mouseEvent) => {
+    clickListenerRef.current = (mouseEvent) => {
       const latlng = mouseEvent.latLng
       placeMarker(latlng)
       onChangeRef.current({ lat: latlng.getLat(), lng: latlng.getLng() })
-    })
+    }
+    window.kakao.maps.event.addListener(map, 'click', clickListenerRef.current)
   }, [])
 
   function handleSearch() {
