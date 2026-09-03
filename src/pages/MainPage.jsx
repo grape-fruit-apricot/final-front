@@ -28,7 +28,9 @@ function MainPage() {
     Promise.all([fetchParticipants(roomUuid), fetchRoomInfo(roomUuid)])
       .then(([participantList, room]) => {
         setParticipants(participantList)
-        if (room.stage === 'MIDPOINT_FOUND') {
+        // stage 값을 열거하면 RESOLVING/RESOLVED 로 넘어간 방에서 지도가 복원되지 않는다.
+        // 백엔드와 같은 기준인 좌표 유무로 판단한다.
+        if (room.midpointLat != null && room.midpointLng != null) {
           setMidpoint({
             name: room.midpointSource === 'FALLBACK' ? '중심점' : '중간지점',
             lat: room.midpointLat,
@@ -49,8 +51,10 @@ function MainPage() {
       setMidpoint(result)
       setIsFinding(false)
     },
-    'midpoint/error': () => {
-      setFindError('중간지점을 찾지 못했습니다. 잠시 후 다시 시도해주세요.')
+    // 서버가 보낸 사유를 그대로 보여준다. "도보 경로를 찾지 못했습니다" 처럼
+    // 다시 시도해도 소용없는 경우가 있어 일괄 문구로 덮으면 안내가 틀어진다.
+    'midpoint/error': (payload) => {
+      setFindError(payload?.message ?? '중간지점을 찾지 못했습니다. 잠시 후 다시 시도해주세요.')
       setIsFinding(false)
     },
   })
