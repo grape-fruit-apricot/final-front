@@ -1,5 +1,6 @@
 import RouteMap from '../map/RouteMap'
 import EmptyState from './EmptyState'
+import ShareRestaurantButton from './ShareRestaurantButton'
 
 // 확정된 식당과 우승자를 발표하고, 내 출발지에서 그 식당까지의 경로를 보여주는 화면.
 // 우승자는 별도 API 없이 "확정된 식당을 고른 참가자"로 계산한다.
@@ -37,6 +38,8 @@ function GameResult({ result, participants, selections, myParticipantId }) {
           {restaurant.roadAddress || restaurant.address}
         </p>
       </div>
+
+      <ShareRestaurantButton restaurant={restaurant} />
 
       <h2 className="mt-2 font-semibold text-white">내 경로</h2>
       {me && myRoute ? (
