@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import useFetchParticipantList from '../hooks/useFetchParticipantList'
 import useFetchRoom from '../hooks/useFetchRoom'
 import useFetchRestaurantList from '../hooks/useFetchRestaurantList'
@@ -9,6 +9,8 @@ import useCreateSelection from '../hooks/useCreateSelection'
 import useUpdateReady from '../hooks/useUpdateReady'
 import useFetchRouteResult from '../hooks/useFetchRouteResult'
 import useFetchModeVote from '../hooks/useFetchModeVote'
+import useFetchGameStatus from '../hooks/useFetchGameStatus'
+import useLeaveRoom from '../hooks/useLeaveRoom'
 import useRoomSocket from '../hooks/useRoomSocket'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 import ErrorMessage from '../components/common/ErrorMessage'
@@ -18,9 +20,12 @@ import RestaurantSearchForm from '../components/common/RestaurantSearchForm'
 import ParticipantSelectionList from '../components/common/ParticipantSelectionList'
 import GameResult from '../components/common/GameResult'
 import ModeVote from '../components/common/ModeVote'
+import TreasureBagGame from '../components/common/TreasureBagGame'
+import LeaveRoomButton from '../components/common/LeaveRoomButton'
 import MidpointMap from '../components/map/MidpointMap'
 
 function MainPage() {
+  const navigate = useNavigate()
   const { roomUuid } = useParams()
   const myParticipantId = localStorage.getItem(`room:${roomUuid}:participantId`)
 
@@ -33,6 +38,8 @@ function MainPage() {
   const { update: updateReady, isLoading: isReadying } = useUpdateReady()
   const { fetch: fetchRouteResult } = useFetchRouteResult()
   const { fetch: fetchModeVote } = useFetchModeVote()
+  const { fetch: fetchGameStatus } = useFetchGameStatus()
+  const { leave: leaveRoom, isLoading: isLeaving } = useLeaveRoom()
 
   const [participants, setParticipants] = useState([])
   const [midpoint, setMidpoint] = useState(null)
@@ -51,6 +58,10 @@ function MainPage() {
   // 투표가 열리기 전에는 null. 열리면 서버가 보낸 현황 전체를 그대로 담는다.
   const [modeVote, setModeVote] = useState(null)
   const [isVoting, setIsVoting] = useState(false)
+  // 게임이 시작되기 전에는 null. 시작하면 서버가 보낸 현황 전체를 그대로 담는다.
+  const [game, setGame] = useState(null)
+  const [isPicking, setIsPicking] = useState(false)
+  const [gameError, setGameError] = useState(null)
 
   useEffect(() => {
     // 방을 옮기면 이전 방의 응답이 늦게 도착해 새 방의 상태를 덮어쓸 수 있다.
@@ -83,7 +94,17 @@ function MainPage() {
               if (!isCancelled) setResult(null)
             })
         }
-        // MODE_SELECTED 는 투표 중, RESOLVING 은 게임이 뽑혔지만 아직 게임이 없는 상태다.
+        // 게임이 도는 중이면 주머니 상태와 남은 시간까지 복원해야 한다.
+        if (room.stage === 'GAME_PLAYING') {
+          return fetchGameStatus(roomUuid)
+            .then((status) => {
+              if (!isCancelled) setGame(status)
+            })
+            .catch(() => {
+              if (!isCancelled) setGame(null)
+            })
+        }
+        // MODE_SELECTED 는 투표 중, RESOLVING 은 게임을 시작하기 전 대기 상태다.
         // 둘 다 투표 현황을 불러와야 화면이 복원된다.
         if (room.stage === 'MODE_SELECTED' || room.stage === 'RESOLVING') {
           return fetchModeVote(roomUuid)
@@ -176,7 +197,18 @@ function MainPage() {
       setIsStarting(false)
       setIsVoting(false)
     },
-    // 무작위로 정해지면 서버가 이어서 경로까지 확정해 보내준다.
+    // 게임이 시작되거나 누군가 주머니를 열면 갱신된 현황 전체가 온다.
+    game: (status) => {
+      setGame(status)
+      setIsPicking(false)
+      setIsStarting(false)
+    },
+    'game/error': (payload) => {
+      setGameError(payload?.message ?? '게임을 처리하지 못했습니다.')
+      setIsPicking(false)
+      setIsStarting(false)
+    },
+    // 무작위로 정해지거나 게임이 끝나면 서버가 이어서 경로까지 확정해 보내준다.
     result: (routeResult) => {
       setResult(routeResult)
       setIsStarting(false)
@@ -245,8 +277,41 @@ function MainPage() {
     }
   }
 
-  // 게임이 뽑혔지만 아직 게임이 없다. 방을 막아두지 않도록 방장이 무작위로 넘길 수 있게 한다.
-  // 게임이 붙으면 이 버튼을 게임 시작으로 교체하면 된다.
+  const handleStartGame = () => {
+    setGameError(null)
+    setIsStarting(true)
+
+    if (!publish('/app/game/start')) {
+      setIsStarting(false)
+      setGameError('연결이 끊겼습니다. 잠시 후 다시 시도해주세요.')
+    }
+  }
+
+  const handlePickBag = (bagIndex) => {
+    setGameError(null)
+    setIsPicking(true)
+
+    if (!publish('/app/game/pick', { bagIndex })) {
+      setIsPicking(false)
+      setGameError('연결이 끊겼습니다. 잠시 후 다시 시도해주세요.')
+    }
+  }
+
+  // 서버에는 차례 타이머가 없다. 시간이 다 되면 화면이 알려준다.
+  // 여러 명이 동시에 보내도 서버가 첫 번째만 반영하므로 실패해도 따로 처리하지 않는다.
+  const handleExpireTurn = (turnSeq) => {
+    publish('/app/game/expire', { turnSeq })
+  }
+
+  const handleLeaveGame = () => {
+    setGameError(null)
+
+    if (!publish('/app/game/leave')) {
+      setGameError('연결이 끊겼습니다. 잠시 후 다시 시도해주세요.')
+    }
+  }
+
+  // 게임을 못 하거나 중단됐을 때 방을 막아두지 않도록 방장이 무작위로 넘길 수 있게 한다.
   const handleFallbackToRandom = () => {
     setStartError(null)
     setIsStarting(true)
@@ -255,6 +320,19 @@ function MainPage() {
       setIsStarting(false)
       setStartError('연결이 끊겼습니다. 잠시 후 다시 시도해주세요.')
     }
+  }
+
+  const handleLeaveRoom = async () => {
+    // 게임 중에는 참가자 행을 지울 수 없다(지우면 게임 기록까지 함께 사라져 서버가 막는다).
+    // 그때는 이탈만 알리고 화면에서 빠진다. 참가자 행은 게임이 끝난 뒤 정리된다.
+    if (game?.status === 'PLAYING') {
+      publish('/app/game/leave')
+    } else {
+      await leaveRoom(roomUuid, myParticipantId).catch(() => {})
+    }
+
+    localStorage.removeItem(`room:${roomUuid}:participantId`)
+    navigate('/')
   }
 
   const me = participants.find(
@@ -267,10 +345,11 @@ function MainPage() {
   const hasSelected = selections.some(
     (selection) => String(selection.participantId) === String(myParticipantId)
   )
-  // 방장에게는 준비 버튼이 없으므로(피그마상 시작하기만 있다) 판정에서 제외한다.
-  const isEveryoneReady = participants
-    .filter((participant) => participant.isHost !== 'Y')
-    .every((participant) => participant.isReady === 'Y')
+  // 방장은 전원이 준비되지 않아도 시작할 수 있다. 대신 게임에 들어갈 인원(방장 + 준비 완료)이
+  // 최소 2명은 되어야 한다(서버도 game.min-participants 로 같은 기준을 다시 확인한다).
+  const readyPlayerCount = participants.filter(
+    (participant) => participant.isHost === 'Y' || participant.isReady === 'Y'
+  ).length
 
   if (isLoading) {
     return <LoadingSpinner />
@@ -282,7 +361,10 @@ function MainPage() {
 
   return (
     <div className="min-h-screen bg-main-navy p-4">
-      <h1 className="text-lg font-semibold text-white">진행</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-lg font-semibold text-white">진행</h1>
+        <LeaveRoomButton onLeave={handleLeaveRoom} isLeaving={isLeaving} />
+      </div>
 
       {result ? (
         <div className="mt-4">
@@ -291,27 +373,64 @@ function MainPage() {
             participants={participants}
             selections={selections}
             myParticipantId={myParticipantId}
+            winnerParticipantId={game?.winnerParticipantId}
           />
+        </div>
+      ) : game ? (
+        <div className="mt-4">
+          <TreasureBagGame
+            status={game}
+            myParticipantId={myParticipantId}
+            onPick={handlePickBag}
+            onExpire={handleExpireTurn}
+            onLeave={handleLeaveGame}
+            isPicking={isPicking}
+            errorMessage={gameError}
+          />
+          {game.status === 'ABORTED' && isHost && (
+            <button
+              type="button"
+              onClick={handleFallbackToRandom}
+              disabled={isStarting}
+              className="mt-4 min-h-11 w-full rounded-lg bg-point-orange font-semibold text-white disabled:bg-white/30 disabled:text-white/60"
+            >
+              {isStarting ? '결과 뽑는 중...' : '무작위로 진행하기'}
+            </button>
+          )}
         </div>
       ) : modeVote ? (
         <div className="mt-4 flex flex-col gap-3">
           {startError && <ErrorMessage message={startError} />}
+          {gameError && <ErrorMessage message={gameError} />}
 
           {modeVote.decidedMode === 'GAME' ? (
             <>
               <h2 className="text-center font-semibold text-white">게임으로 정해졌습니다</h2>
               <p className="text-center text-sm text-white/70">
-                게임은 아직 준비 중입니다. 방장이 무작위로 진행할 수 있습니다.
+                보물 주머니에서 당첨을 찾은 사람이 고른 식당으로 정해집니다.
               </p>
               {isHost && (
-                <button
-                  type="button"
-                  onClick={handleFallbackToRandom}
-                  disabled={isStarting}
-                  className="mt-4 min-h-11 w-full rounded-lg bg-point-orange font-semibold text-white disabled:bg-white/30 disabled:text-white/60"
-                >
-                  {isStarting ? '결과 뽑는 중...' : '무작위로 진행하기'}
-                </button>
+                <>
+                  <button
+                    type="button"
+                    onClick={handleStartGame}
+                    disabled={readyPlayerCount < 2 || isStarting}
+                    className="mt-4 min-h-11 w-full rounded-lg bg-point-orange font-semibold text-white disabled:bg-white/30 disabled:text-white/60"
+                  >
+                    {isStarting ? '게임 여는 중...' : '게임 시작'}
+                  </button>
+                  <p className="text-center text-xs text-white/60">
+                    방장과 준비를 마친 참가자 {readyPlayerCount}명이 참여합니다.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleFallbackToRandom}
+                    disabled={isStarting}
+                    className="min-h-11 w-full rounded-lg bg-white/10 font-semibold text-white/80 disabled:opacity-60"
+                  >
+                    무작위로 진행하기
+                  </button>
+                </>
               )}
             </>
           ) : modeVote.decidedMode === 'RANDOM' ? (
@@ -346,7 +465,7 @@ function MainPage() {
                 <button
                   type="button"
                   onClick={handleStart}
-                  disabled={!isEveryoneReady || isStarting}
+                  disabled={isStarting}
                   className="mt-4 min-h-11 w-full rounded-lg bg-point-orange font-semibold text-white disabled:bg-white/30 disabled:text-white/60"
                 >
                   {isStarting ? '결과 뽑는 중...' : '시작하기'}
