@@ -6,11 +6,11 @@ function useFetchRouteResult() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  const fetch = async (roomUuid) => {
+  const fetch = async (roomUuid, travelMode = 'WALK') => {
     setIsLoading(true)
     setError(null)
     try {
-      return await fetchRouteResult(roomUuid)
+      return await fetchRouteResult(roomUuid, travelMode)
     } catch (err) {
       setError(err)
       throw err
