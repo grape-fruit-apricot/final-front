@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import RouteMap from '../map/RouteMap'
 import EmptyState from './EmptyState'
+import ShareRestaurantButton from './ShareRestaurantButton'
 
 const TRAVEL_MODES = [
   { value: 'WALK', label: '도보' },
@@ -78,6 +79,8 @@ function GameResult({
           {restaurant.roadAddress || restaurant.address}
         </p>
       </div>
+
+      <ShareRestaurantButton restaurant={restaurant} />
 
       <div className="grid grid-cols-2 gap-2 rounded-lg bg-white/10 p-1" aria-label="이동수단 선택">
         {TRAVEL_MODES.map((mode) => {
