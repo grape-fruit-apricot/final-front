@@ -230,6 +230,11 @@ function MainPage() {
     }
   }
 
+  const handleTravelModeChange = async (travelMode) => {
+    const routeResult = await fetchRouteResult(roomUuid, travelMode)
+    setResult(routeResult)
+  }
+
   // 추가에 성공하면 갱신된 목록이 소켓으로 돌아오므로 여기서 목록을 다시 조회하지 않는다.
   const handleAddRestaurant = async (payload) => {
     setAddError(null)
@@ -374,6 +379,7 @@ function MainPage() {
             selections={selections}
             myParticipantId={myParticipantId}
             winnerParticipantId={game?.winnerParticipantId}
+            onTravelModeChange={handleTravelModeChange}
           />
         </div>
       ) : game ? (

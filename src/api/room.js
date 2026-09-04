@@ -31,8 +31,10 @@ export function createRestaurant(roomUuid, payload) {
 }
 
 // 확정된 결과(선정 식당 + 참가자별 경로) 조회. 확정 전에는 404가 돌아온다.
-export function fetchRouteResult(roomUuid) {
-  return api.get(`/api/rooms/${roomUuid}/routes`)
+export function fetchRouteResult(roomUuid, travelMode = 'WALK') {
+  return api.get(`/api/rooms/${roomUuid}/routes`, {
+    params: { travelMode },
+  })
 }
 
 // 진행 방식(게임/무작위) 투표 현황 조회. 투표 자체는 소켓으로만 보낸다.
