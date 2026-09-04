@@ -61,3 +61,14 @@ export function fetchMessageList(roomUuid, afterMessageId) {
     params: afterMessageId ? { afterMessageId } : undefined,
   })
 }
+
+// 게임 현황 조회. 새로고침이나 재접속에서 진행 중인 게임을 복원할 때 쓴다
+// (시작·선택·만료·나가기는 소켓으로만 보낸다)
+export function fetchGameStatus(roomUuid) {
+  return api.get(`/api/rooms/${roomUuid}/games`)
+}
+
+// 방에서 나가기. 게임 중에는 서버가 거절하므로 그때는 소켓의 /app/game/leave 를 쓴다
+export function deleteParticipant(roomUuid, participantId) {
+  return api.delete(`/api/rooms/${roomUuid}/participants/${participantId}`)
+}

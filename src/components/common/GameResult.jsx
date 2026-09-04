@@ -2,17 +2,24 @@ import RouteMap from '../map/RouteMap'
 import EmptyState from './EmptyState'
 
 // 확정된 식당과 우승자를 발표하고, 내 출발지에서 그 식당까지의 경로를 보여주는 화면.
-// 우승자는 별도 API 없이 "확정된 식당을 고른 참가자"로 계산한다.
-function GameResult({ result, participants, selections, myParticipantId }) {
+// 게임으로 정해졌으면 서버가 알려준 승자 한 명을 그대로 쓴다.
+// 무작위로 정해졌을 때만 "확정된 식당을 고른 참가자"로 계산한다
+// (그 경우 같은 식당을 고른 사람이 여럿일 수 있고, 그들 모두가 우승자다).
+function GameResult({ result, participants, selections, myParticipantId, winnerParticipantId }) {
   const { restaurant, participantRoutes } = result
 
-  const winners = participants.filter((participant) =>
-    selections.some(
-      (selection) =>
-        String(selection.participantId) === String(participant.participantId) &&
-        selection.restaurantId === restaurant.restaurantId
-    )
-  )
+  const winners = winnerParticipantId
+    ? participants.filter(
+        (participant) =>
+          String(participant.participantId) === String(winnerParticipantId)
+      )
+    : participants.filter((participant) =>
+        selections.some(
+          (selection) =>
+            String(selection.participantId) === String(participant.participantId) &&
+            selection.restaurantId === restaurant.restaurantId
+        )
+      )
 
   const me = participants.find(
     (participant) => String(participant.participantId) === String(myParticipantId)
