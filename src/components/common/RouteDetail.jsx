@@ -59,7 +59,9 @@ function RouteDetail({ result, participants, myParticipantId, onBack, onTravelMo
 
       {me && myRoute ? (
         <RouteMap
+          segments={myRoute.segments}
           points={myRoute.points}
+          travelMode={myRoute.travelMode}
           start={{ lat: me.prefLat, lng: me.prefLng }}
           end={{ lat: restaurant.lat, lng: restaurant.lng }}
           startLabel="내 위치"
