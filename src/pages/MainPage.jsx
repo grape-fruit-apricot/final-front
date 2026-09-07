@@ -349,7 +349,7 @@ function MainPage() {
   }
 
   return (
-    <div className="min-h-screen bg-main-navy p-4">
+    <div className="min-h-screen bg-main-navy p-4 pb-24">
       <h1 className="text-lg font-semibold text-white">진행</h1>
 
       {result ? (

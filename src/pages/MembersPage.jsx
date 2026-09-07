@@ -8,7 +8,7 @@ function MembersPage() {
   const { myParticipantId, room, participants } = useOutletContext()
 
   return (
-    <div className="min-h-screen bg-background p-4">
+    <div className="min-h-screen bg-background p-4 pb-24">
       <div className="flex items-baseline justify-between">
         <h1 className="text-lg font-semibold text-app-text">멤버</h1>
         <p className="text-sm text-app-text/70">
