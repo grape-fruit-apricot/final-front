@@ -113,6 +113,7 @@ function GameResult({
       {me && myRoute ? (
         <>
           <RouteMap
+            segments={myRoute.segments}
             points={myRoute.points}
             start={{ lat: me.prefLat, lng: me.prefLng }}
             end={{ lat: restaurant.lat, lng: restaurant.lng }}
