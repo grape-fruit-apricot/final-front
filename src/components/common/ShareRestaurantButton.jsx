@@ -3,6 +3,7 @@ import { shareRestaurant } from '../../utils/shareRestaurant'
 import ErrorMessage from './ErrorMessage'
 
 // 최종 선정된 식당을 방 참가자가 아닌 외부(카톡 등)로 공유하는 버튼.
+// 결과 화면의 주 동작은 "경로 보기"라, 같은 채움 버튼이 두 개 겹치지 않도록 테두리형으로 둔다.
 function ShareRestaurantButton({ restaurant }) {
   const [status, setStatus] = useState(null) // 'copied' | 'error' | null
 
@@ -24,7 +25,7 @@ function ShareRestaurantButton({ restaurant }) {
       <button
         type="button"
         onClick={handleShare}
-        className="min-h-11 w-full rounded-lg bg-point-orange font-semibold text-white"
+        className="min-h-11 w-full rounded-lg border-2 border-point-orange bg-white font-semibold text-point-orange"
       >
         {status === 'copied' ? '링크 복사됨!' : '식당 공유하기'}
       </button>

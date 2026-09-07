@@ -18,6 +18,7 @@ import RestaurantSearchForm from '../components/common/RestaurantSearchForm'
 import ParticipantSelectionList from '../components/common/ParticipantSelectionList'
 import RoomCodeCard from '../components/common/RoomCodeCard'
 import GameResult from '../components/common/GameResult'
+import RouteDetail from '../components/common/RouteDetail'
 import ModeVote from '../components/common/ModeVote'
 import TreasureBagGame from '../components/common/TreasureBagGame'
 import MidpointMap from '../components/map/MidpointMap'
@@ -56,6 +57,8 @@ function MainPage() {
   const [game, setGame] = useState(null)
   const [isPicking, setIsPicking] = useState(false)
   const [gameError, setGameError] = useState(null)
+  // 결과 발표와 경로 안내를 한 탭 안에서 번갈아 보여준다(주소는 그대로 두고 화면만 바꾼다).
+  const [isRouteOpen, setIsRouteOpen] = useState(false)
 
   useEffect(() => {
     // 방을 옮기면 이전 방의 응답이 늦게 도착해 새 방의 상태를 덮어쓸 수 있다.
@@ -345,14 +348,23 @@ function MainPage() {
 
       {result ? (
         <div className="mt-4">
-          <GameResult
-            result={result}
-            participants={participants}
-            selections={selections}
-            myParticipantId={myParticipantId}
-            winnerParticipantId={game?.winnerParticipantId}
-            onTravelModeChange={handleTravelModeChange}
-          />
+          {isRouteOpen ? (
+            <RouteDetail
+              result={result}
+              participants={participants}
+              myParticipantId={myParticipantId}
+              onBack={() => setIsRouteOpen(false)}
+              onTravelModeChange={handleTravelModeChange}
+            />
+          ) : (
+            <GameResult
+              result={result}
+              participants={participants}
+              selections={selections}
+              winnerParticipantId={game?.winnerParticipantId}
+              onShowRoute={() => setIsRouteOpen(true)}
+            />
+          )}
         </div>
       ) : game ? (
         <div className="mt-4">
