@@ -59,6 +59,8 @@ function MainPage() {
   const [gameError, setGameError] = useState(null)
   // 결과 발표와 경로 안내를 한 탭 안에서 번갈아 보여준다(주소는 그대로 두고 화면만 바꾼다).
   const [isRouteOpen, setIsRouteOpen] = useState(false)
+  // 이미 고른 사람이 다시 고르는 중인지. 서버는 선택을 덮어쓰므로(MERGE) 화면만 되돌려주면 된다.
+  const [isReselecting, setIsReselecting] = useState(false)
 
   useEffect(() => {
     // 방을 옮기면 이전 방의 응답이 늦게 도착해 새 방의 상태를 덮어쓸 수 있다.
@@ -240,9 +242,13 @@ function MainPage() {
   // 선택 결과도 소켓으로 갱신된 현황이 돌아오므로 여기서 다시 조회하지 않는다.
   const handleSelectRestaurant = async (restaurantId) => {
     setSelectError(null)
-    await createSelection(roomUuid, myParticipantId, restaurantId).catch((err) => {
+    try {
+      await createSelection(roomUuid, myParticipantId, restaurantId)
+      // 고르고 나면 현황 화면으로 돌아간다. 실패하면 목록에 남아 다시 고를 수 있어야 한다.
+      setIsReselecting(false)
+    } catch (err) {
       setSelectError(err?.response?.data?.message ?? '식당을 선택하지 못했습니다.')
-    })
+    }
   }
 
   const handleReady = async () => {
@@ -439,7 +445,7 @@ function MainPage() {
         <div className="mt-4 flex flex-col gap-3">
           <MidpointMap name={midpoint.name} lat={midpoint.lat} lng={midpoint.lng} />
 
-          {hasSelected ? (
+          {hasSelected && !isReselecting ? (
             <>
               <h2 className="mt-2 text-center font-semibold text-white">참가자들이 고른 식당</h2>
               <ParticipantSelectionList
@@ -470,10 +476,25 @@ function MainPage() {
                   {isReady ? '준비중' : '준비하기'}
                 </button>
               )}
+
+              {/* 서버가 선택을 덮어쓰므로 몇 번이든 바꿀 수 있다.
+                  단 중간지점 단계에서만 허용되어, 게임·결과로 넘어가면 이 화면 자체가 사라진다. */}
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectError(null)
+                  setIsReselecting(true)
+                }}
+                className="min-h-11 w-full rounded-lg border-2 border-point-orange bg-white font-semibold text-point-orange"
+              >
+                식당 변경하기
+              </button>
             </>
           ) : (
             <>
-              <h2 className="mt-2 font-semibold text-white">주변 식당</h2>
+              <h2 className="mt-2 font-semibold text-white">
+                {isReselecting ? '식당 다시 고르기' : '주변 식당'}
+              </h2>
               <RestaurantSearchForm
                 lat={midpoint.lat}
                 lng={midpoint.lng}
@@ -492,6 +513,20 @@ function MainPage() {
                 onSelect={handleSelectRestaurant}
                 isSelecting={isSelecting}
               />
+
+              {/* 마음이 바뀌면 고른 것을 그대로 두고 돌아갈 수 있어야 한다. */}
+              {isReselecting && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectError(null)
+                    setIsReselecting(false)
+                  }}
+                  className="min-h-11 w-full rounded-lg bg-white/10 font-semibold text-white/80"
+                >
+                  변경 취소
+                </button>
+              )}
             </>
           )}
         </div>
