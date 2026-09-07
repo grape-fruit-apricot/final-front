@@ -120,11 +120,9 @@ function LocationPicker({ value, onChange, height = 192 }) {
           <p className="p-4 text-sm text-app-text/60">지도를 불러오려면 VITE_KAKAO_JS_KEY 설정이 필요합니다.</p>
         )}
       </div>
-      {value && (
-        <p className="text-xs text-white/70">
-          선택한 위치: {value.lat.toFixed(6)}, {value.lng.toFixed(6)}
-        </p>
-      )}
+      {/* 좌표 숫자는 보여주지 않는다. 고른 위치는 지도 위 마커로 확인하면 되고,
+          위도·경도는 사용자가 판단에 쓸 수 있는 정보가 아니다. */}
+      {value && <p className="text-xs text-white/70">위치가 선택되었습니다.</p>}
     </div>
   )
 }
