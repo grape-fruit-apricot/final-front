@@ -1,17 +1,11 @@
 import { useEffect, useRef } from 'react'
 import { useKakaoMapsLoader } from '../../hooks/useKakaoMapsLoader'
-
-const SEGMENT_STYLES = {
-  WALKING: { label: '도보', color: '#F2762E', weight: 5, style: 'shortdash' },
-  BUS: { label: '버스', color: '#2563EB', weight: 7, style: 'solid' },
-  SUBWAY: { label: '지하철', color: '#16A34A', weight: 8, style: 'solid' },
-  UNKNOWN: { label: '경로', color: '#6B7280', weight: 6, style: 'dash' },
-}
+import { normalizeSegmentType, resolveRouteColors, SEGMENT_STYLES } from '../../utils/routeStyles'
 
 // 출발지에서 목적지까지 이동수단별 경로를 나누어 그리는 표시용 컴포넌트.
 // 구간 배열을 JSON.stringify 해서 의존성으로 거는 이유는, 참조만 바뀌고 내용이 같을 때
 // 지도를 다시 만들지 않기 위해서다(확대·이동 상태가 초기화되고 자원도 낭비된다).
-function RouteMap({ segments, points, start, end, startLabel = '출발', endLabel = '도착', height = 280 }) {
+function RouteMap({ segments, points, travelMode, start, end, startLabel = '출발', endLabel = '도착', height = 280 }) {
   const containerRef = useRef(null)
   const mapRef = useRef(null)
   // 지도 위에 올린 폴리라인·마커·오버레이를 모아둔다. 다시 그리기 전과 화면을 떠날 때
@@ -20,7 +14,8 @@ function RouteMap({ segments, points, start, end, startLabel = '출발', endLabe
 
   const routeSegments = Array.isArray(segments) && segments.length > 0
     ? segments
-    : [{ segmentType: 'UNKNOWN', points: Array.isArray(points) ? points : [] }]
+    : [{ segmentType: travelMode === 'WALK' ? 'WALKING' : 'UNKNOWN', points: Array.isArray(points) ? points : [] }]
+  const routeColors = resolveRouteColors(routeSegments)
   const visibleTypes = [...new Set(
     routeSegments
       .filter((segment) => Array.isArray(segment.points) && segment.points.length > 1)
@@ -58,9 +53,9 @@ function RouteMap({ segments, points, start, end, startLabel = '출발', endLabe
           new window.kakao.maps.Polyline({
             map,
             path,
-            strokeColor: segmentStyle.color,
+            strokeColor: routeColors.colorForLeg(segment),
             strokeWeight: segmentStyle.weight,
-            strokeOpacity: 0.9,
+            strokeOpacity: 0.85,
             strokeStyle: segmentStyle.style,
           })
         )
@@ -78,7 +73,7 @@ function RouteMap({ segments, points, start, end, startLabel = '출발', endLabe
       map.relayout()
       map.setBounds(bounds)
     },
-    [JSON.stringify(segments), JSON.stringify(points), JSON.stringify(start), JSON.stringify(end), startLabel, endLabel],
+    [JSON.stringify(segments), JSON.stringify(points), travelMode, JSON.stringify(start), JSON.stringify(end), startLabel, endLabel],
     { enabled: start != null && end != null }
   )
 
@@ -89,13 +84,19 @@ function RouteMap({ segments, points, start, end, startLabel = '출발', endLabe
         <div className="absolute left-2 top-2 z-10 flex flex-wrap gap-2 rounded-md bg-white/90 px-2 py-1 text-xs text-app-text shadow">
           {visibleTypes.map((type) => (
             <div key={type} className="flex items-center gap-1">
-              <span
-                className="inline-block w-5 border-t-4"
-                style={{
-                  borderColor: SEGMENT_STYLES[type].color,
-                  borderTopStyle: type === 'WALKING' || type === 'UNKNOWN' ? 'dashed' : 'solid',
-                }}
-              />
+              {[...new Set(routeSegments
+                .filter((segment) => normalizeSegmentType(segment.segmentType) === type
+                  && Array.isArray(segment.points) && segment.points.length > 1)
+                .map(routeColors.colorForLeg))].map((color) => (
+                <span
+                  key={color}
+                  className="inline-block w-5 border-t-4"
+                  style={{
+                    borderColor: color,
+                    borderTopStyle: type === 'WALKING' ? 'dotted' : type === 'UNKNOWN' ? 'dashed' : 'solid',
+                  }}
+                />
+              ))}
               <span>{SEGMENT_STYLES[type].label}</span>
             </div>
           ))}
@@ -103,11 +104,6 @@ function RouteMap({ segments, points, start, end, startLabel = '출발', endLabe
       )}
     </div>
   )
-}
-
-function normalizeSegmentType(segmentType) {
-  const normalizedType = String(segmentType || '').toUpperCase()
-  return SEGMENT_STYLES[normalizedType] ? normalizedType : 'UNKNOWN'
 }
 
 function addLabeledMarker(map, overlays, position, label, color) {
