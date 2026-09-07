@@ -6,11 +6,11 @@ function useCreateRoom() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  const create = async () => {
+  const create = async (payload) => {
     setIsLoading(true)
     setError(null)
     try {
-      return await createRoom()
+      return await createRoom(payload)
     } catch (err) {
       setError(err)
       throw err
