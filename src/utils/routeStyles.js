@@ -105,6 +105,15 @@ function sameColorFamily(hexA, hexB) {
 }
 
 const BUS_FALLBACK_COLOR = '#7C3AED'
+const BUS_NEUTRAL_COLOR = '#374151'
+
+// 대체한 보라색도 같은 경로의 지하철색과 비슷하면 차콜색으로 구분한다.
+function resolveBusColor(subwayColors) {
+  const candidates = [ROUTE_COLORS.bus, BUS_FALLBACK_COLOR]
+  return candidates.find((color) =>
+    subwayColors.every((subwayColor) => !sameColorFamily(subwayColor, color))
+  ) || BUS_NEUTRAL_COLOR
+}
 
 export function resolveRouteColors(legs) {
   const subwayColors = [
@@ -116,9 +125,7 @@ export function resolveRouteColors(legs) {
   ]
 
   const walk = ROUTE_COLORS.walk
-  const bus = subwayColors.some((c) => sameColorFamily(c, ROUTE_COLORS.bus))
-    ? BUS_FALLBACK_COLOR
-    : ROUTE_COLORS.bus
+  const bus = resolveBusColor(subwayColors)
 
   function colorForLeg(leg) {
     const kind = normalizeSegmentType(leg.segmentType)
