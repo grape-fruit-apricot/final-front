@@ -62,7 +62,9 @@ function GameResult({
         경로 보기
       </button>
 
+
       <ShareRestaurantButton restaurant={restaurant} />
+
     </div>
   )
 }
