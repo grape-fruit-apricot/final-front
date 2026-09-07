@@ -93,7 +93,9 @@ function RoomLayout() {
   // 로딩·에러일 때도 하단 네브는 남긴다. 방 정보를 못 불러온 방에서 나갈 수 없으면 갇힌다.
   return (
     <>
-      <div className="pb-20">
+      {/* 하단 네브 여백은 각 화면이 자기 배경 안쪽에 둔다.
+          여기서 padding 을 주면 그 부분만 화면 배경이 아니라 바깥 배경이 비쳐 색이 끊긴다. */}
+      <div>
         {isLoading ? (
           <LoadingSpinner />
         ) : loadError ? (
