@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import useFetchMessageList from '../hooks/useFetchMessageList'
+import useMyParticipantId from '../hooks/useMyParticipantId'
 import useRoomSocket from '../hooks/useRoomSocket'
 import MessageList from '../components/chat/MessageList'
 import MessageInput from '../components/chat/MessageInput'
@@ -9,7 +10,7 @@ import ErrorMessage from '../components/common/ErrorMessage'
 
 function ChatPage() {
   const { roomUuid } = useParams()
-  const myParticipantId = localStorage.getItem(`room:${roomUuid}:participantId`)
+  const myParticipantId = useMyParticipantId(roomUuid)
 
   const { fetch: fetchMessages } = useFetchMessageList()
   const [messages, setMessages] = useState([])

@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
-import useFetchParticipantList from '../hooks/useFetchParticipantList'
+import { useOutletContext } from 'react-router-dom'
 import useFetchRoom from '../hooks/useFetchRoom'
 import useFetchRestaurantList from '../hooks/useFetchRestaurantList'
 import useCreateRestaurant from '../hooks/useCreateRestaurant'
@@ -10,7 +9,6 @@ import useUpdateReady from '../hooks/useUpdateReady'
 import useFetchRouteResult from '../hooks/useFetchRouteResult'
 import useFetchModeVote from '../hooks/useFetchModeVote'
 import useFetchGameStatus from '../hooks/useFetchGameStatus'
-import useLeaveRoom from '../hooks/useLeaveRoom'
 import useRoomSocket from '../hooks/useRoomSocket'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 import ErrorMessage from '../components/common/ErrorMessage'
@@ -18,18 +16,16 @@ import ParticipantList from '../components/common/ParticipantList'
 import RestaurantList from '../components/common/RestaurantList'
 import RestaurantSearchForm from '../components/common/RestaurantSearchForm'
 import ParticipantSelectionList from '../components/common/ParticipantSelectionList'
+import RoomCodeCard from '../components/common/RoomCodeCard'
 import GameResult from '../components/common/GameResult'
 import ModeVote from '../components/common/ModeVote'
 import TreasureBagGame from '../components/common/TreasureBagGame'
-import LeaveRoomButton from '../components/common/LeaveRoomButton'
 import MidpointMap from '../components/map/MidpointMap'
 
 function MainPage() {
-  const navigate = useNavigate()
-  const { roomUuid } = useParams()
-  const myParticipantId = localStorage.getItem(`room:${roomUuid}:participantId`)
+  // 참가자 목록은 RoomLayout 이 소켓으로 최신 상태를 유지한다(멤버 탭과 같은 값을 봐야 한다).
+  const { roomUuid, myParticipantId, participants } = useOutletContext()
 
-  const { fetch: fetchParticipants } = useFetchParticipantList()
   const { fetch: fetchRoomInfo } = useFetchRoom()
   const { fetch: fetchRestaurants } = useFetchRestaurantList()
   const { create: createRestaurant, isLoading: isAdding } = useCreateRestaurant()
@@ -39,9 +35,7 @@ function MainPage() {
   const { fetch: fetchRouteResult } = useFetchRouteResult()
   const { fetch: fetchModeVote } = useFetchModeVote()
   const { fetch: fetchGameStatus } = useFetchGameStatus()
-  const { leave: leaveRoom, isLoading: isLeaving } = useLeaveRoom()
 
-  const [participants, setParticipants] = useState([])
   const [midpoint, setMidpoint] = useState(null)
   const [restaurants, setRestaurants] = useState([])
   const [selections, setSelections] = useState([])
@@ -69,11 +63,12 @@ function MainPage() {
 
     setIsLoading(true)
     setLoadError(null)
-    Promise.all([fetchParticipants(roomUuid), fetchRoomInfo(roomUuid)])
-      .then(([participantList, room]) => {
+    // 방 정보는 RoomLayout 도 갖고 있지만 그쪽은 입장 시점에서 멈춘 값이다. 탭을 옮겨도
+    // 리마운트되지 않기 때문이다. 이 화면은 진행 단계로 복원해야 하므로 직접 다시 부른다.
+    fetchRoomInfo(roomUuid)
+      .then((room) => {
         if (isCancelled) return
 
-        setParticipants(participantList)
         // stage 값을 열거하면 RESOLVING/RESOLVED 로 넘어간 방에서 지도가 복원되지 않는다.
         // 백엔드와 같은 기준인 좌표 유무로 판단한다.
         if (room.midpointLat != null && room.midpointLng != null) {
@@ -160,9 +155,6 @@ function MainPage() {
   }, [hasMidpoint, roomUuid])
 
   const { publish } = useRoomSocket(roomUuid, myParticipantId, {
-    participants: (newParticipant) => {
-      setParticipants((prev) => [...prev, newParticipant])
-    },
     midpoint: (result) => {
       setMidpoint(result)
       setIsFinding(false)
@@ -180,10 +172,6 @@ function MainPage() {
     // 누군가 식당을 선택하면 갱신된 선택 현황 전체가 온다.
     selections: (list) => {
       setSelections(list)
-    },
-    // 누군가 준비를 마치면 갱신된 참가자 목록 전체가 온다(입장 토픽은 새 참가자 1명만 보낸다).
-    'participants/ready': (list) => {
-      setParticipants(list)
     },
     // 방장이 투표를 열거나 누군가 투표하면 갱신된 현황 전체가 온다.
     // decidedMode 가 채워져 오면 전원 투표가 끝났다는 뜻이다.
@@ -327,19 +315,6 @@ function MainPage() {
     }
   }
 
-  const handleLeaveRoom = async () => {
-    // 게임 중에는 참가자 행을 지울 수 없다(지우면 게임 기록까지 함께 사라져 서버가 막는다).
-    // 그때는 이탈만 알리고 화면에서 빠진다. 참가자 행은 게임이 끝난 뒤 정리된다.
-    if (game?.status === 'PLAYING') {
-      publish('/app/game/leave')
-    } else {
-      await leaveRoom(roomUuid, myParticipantId).catch(() => {})
-    }
-
-    localStorage.removeItem(`room:${roomUuid}:participantId`)
-    navigate('/')
-  }
-
   const me = participants.find(
     (participant) => String(participant.participantId) === String(myParticipantId)
   )
@@ -366,10 +341,7 @@ function MainPage() {
 
   return (
     <div className="min-h-screen bg-main-navy p-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-white">진행</h1>
-        <LeaveRoomButton onLeave={handleLeaveRoom} isLeaving={isLeaving} />
-      </div>
+      <h1 className="text-lg font-semibold text-white">진행</h1>
 
       {result ? (
         <div className="mt-4">
@@ -512,23 +484,25 @@ function MainPage() {
           )}
         </div>
       ) : (
-        <>
-          <p className="mt-1 text-sm text-white/70">{participants.length}명 참여 중</p>
-          <div className="mt-4">
-            <ParticipantList participants={participants} />
-          </div>
+        // 아직 중간지점이 없는 첫 단계다. 사람을 모으는 중이라 방 코드를 함께 보여준다.
+        <div className="mt-4 flex flex-col gap-3">
+          <RoomCodeCard roomUuid={roomUuid} />
+
+          <p className="text-sm text-white/70">{participants.length}명 참여 중</p>
+          <ParticipantList participants={participants} myParticipantId={myParticipantId} />
+
           {isHost && (
             <button
               type="button"
               onClick={handleFindMidpoint}
               disabled={isFinding}
-              className="mt-4 min-h-11 w-full rounded-lg bg-point-orange font-semibold text-white disabled:opacity-60"
+              className="mt-1 min-h-11 w-full rounded-lg bg-point-orange font-semibold text-white disabled:opacity-60"
             >
               {isFinding ? '중간지점 찾는 중...' : '중간지점 찾기'}
             </button>
           )}
           {isHost && findError && <ErrorMessage message={findError} />}
-        </>
+        </div>
       )}
     </div>
   )
