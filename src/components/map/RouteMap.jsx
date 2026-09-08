@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useKakaoMapsLoader } from '../../hooks/useKakaoMapsLoader'
 import { normalizeSegmentType, resolveRouteColors, SEGMENT_STYLES } from '../../utils/routeStyles'
+import { createPinContent } from '../../utils/mapMarker'
 
 // 출발지에서 목적지까지 이동수단별 경로를 나누어 그리는 표시용 컴포넌트.
 // 구간 배열을 JSON.stringify 해서 의존성으로 거는 이유는, 참조만 바뀌고 내용이 같을 때
@@ -62,10 +63,10 @@ function RouteMap({ segments, points, travelMode, start, end, startLabel = '출�
         path.forEach((latlng) => bounds.extend(latlng))
       })
 
-      addLabeledMarker(map, overlaysRef.current, start, startLabel, '#17171A')
+      addLabeledMarker(map, overlaysRef.current, start, startLabel, 'var(--color-app-text)')
       bounds.extend(new window.kakao.maps.LatLng(start.lat, start.lng))
 
-      addLabeledMarker(map, overlaysRef.current, end, endLabel, '#D2401C')
+      addLabeledMarker(map, overlaysRef.current, end, endLabel, 'var(--color-point-orange)')
       bounds.extend(new window.kakao.maps.LatLng(end.lat, end.lng))
 
       // 컨테이너가 막 렌더링된 시점엔 지도가 자기 크기를 몰라서, 크기를 다시 계산시킨 뒤
@@ -110,16 +111,17 @@ function RouteMap({ segments, points, travelMode, start, end, startLabel = '출�
   )
 }
 
+// 출발지는 본문색, 목적지는 강조색으로 구분한다.
 function addLabeledMarker(map, overlays, position, label, color) {
   const latlng = new window.kakao.maps.LatLng(position.lat, position.lng)
 
-  overlays.push(new window.kakao.maps.Marker({ position: latlng, map }))
   overlays.push(
     new window.kakao.maps.CustomOverlay({
       position: latlng,
       map,
-      yAnchor: 1.8,
-      content: `<div style="background:${color};color:#fff;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap;">${label}</div>`,
+      // 핀 끝이 좌표에 놓이게 한다.
+      yAnchor: 1,
+      content: createPinContent({ label, color }),
     })
   )
 }

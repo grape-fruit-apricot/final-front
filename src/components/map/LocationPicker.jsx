@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useKakaoMapsLoader } from '../../hooks/useKakaoMapsLoader'
+import { useKakaoMapResize } from '../../hooks/useKakaoMapResize'
+import { createPinContent } from '../../utils/mapMarker'
 import Button from '../common/Button'
 import ErrorMessage from '../common/ErrorMessage'
 
@@ -7,8 +9,9 @@ const KAKAO_JS_KEY = import.meta.env.VITE_KAKAO_JS_KEY
 // 지도가 처음 뜰 때 보여줄 중심좌표(실제 위치는 지도를 클릭하거나 검색해서 고른다)
 const DEFAULT_CENTER = { lat: 37.5696, lng: 126.9842 }
 
-// 지도를 클릭하거나 주소를 검색해서 좌표 하나를 고르는 공통 컴포넌트
-function LocationPicker({ value, onChange, height = 300 }) {
+// 지도를 클릭하거나 주소를 검색해서 좌표 하나를 고르는 공통 컴포넌트.
+// fill 을 켜면 고정 높이 대신 남은 세로 공간을 지도가 전부 차지한다.
+function LocationPicker({ value, onChange, height = 300, fill = false }) {
   const containerRef = useRef(null)
   const mapRef = useRef(null)
   const markerRef = useRef(null)
@@ -19,6 +22,9 @@ function LocationPicker({ value, onChange, height = 300 }) {
     onChangeRef.current = onChange
   })
 
+  // fill 이면 지도 크기가 레이아웃에 따라 정해지므로, 크기가 바뀔 때마다 다시 맞춰야 한다.
+  useKakaoMapResize(containerRef, mapRef)
+
   const [query, setQuery] = useState('')
   const [isSearching, setIsSearching] = useState(false)
   const [searchError, setSearchError] = useState(null)
@@ -27,7 +33,13 @@ function LocationPicker({ value, onChange, height = 300 }) {
     if (markerRef.current) {
       markerRef.current.setPosition(latlng)
     } else {
-      markerRef.current = new window.kakao.maps.Marker({ position: latlng, map: mapRef.current })
+      markerRef.current = new window.kakao.maps.CustomOverlay({
+        position: latlng,
+        map: mapRef.current,
+        // 핀 끝이 좌표에 놓이게 한다.
+        yAnchor: 1,
+        content: createPinContent({ label: '출발지' }),
+      })
     }
     mapRef.current.panTo(latlng)
   }
@@ -91,7 +103,7 @@ function LocationPicker({ value, onChange, height = 300 }) {
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className={`flex flex-col gap-2 ${fill ? "min-h-0 flex-1" : ""}`}>
       <div className="flex items-center gap-1.5 rounded-full border border-edge bg-surface p-1.5 pl-3 shadow-surface">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="h-[18px] w-[18px] flex-none text-accent-ink" aria-hidden="true">
           <circle cx="11" cy="11" r="7" />
@@ -117,8 +129,10 @@ function LocationPicker({ value, onChange, height = 300 }) {
       {searchError && <ErrorMessage message={searchError} />}
       <div
         ref={containerRef}
-        className="w-full overflow-hidden rounded-card border border-edge bg-fill shadow-surface"
-        style={{ height }}
+        className={`w-full overflow-hidden rounded-card border border-edge bg-fill shadow-surface ${
+          fill ? 'min-h-0 flex-1' : ''
+        }`}
+        style={fill ? undefined : { height }}
       >
         {!KAKAO_JS_KEY && (
           <p className="p-4 text-sm text-ink-soft">지도를 불러오려면 VITE_KAKAO_JS_KEY 설정이 필요합니다.</p>

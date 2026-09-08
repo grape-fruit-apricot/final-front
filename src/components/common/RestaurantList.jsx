@@ -4,7 +4,18 @@ import EmptyState from './EmptyState'
 // 방의 식당 목록을 나열하는 공통 컴포넌트.
 // selections(방 전체 선택 현황)를 받으면 식당별 선택 인원과 내 선택을 함께 표시한다.
 // 참가자가 직접 추가한 식당(source='MANUAL')은 눈에 띄도록 위쪽에 따로 묶어 보여준다.
-function RestaurantList({ restaurants, selections = [], myParticipantId, onSelect, isSelecting }) {
+//
+// selectedRestaurantId: 아직 서버에 보내지 않은, 지금 눌러둔 식당.
+// 고르는 중에는 서버에 저장된 선택이 아니라 이 값으로 체크를 표시해야 한다.
+// 넘기지 않으면 예전처럼 서버에 저장된 내 선택을 따른다.
+function RestaurantList({
+  restaurants,
+  selections = [],
+  myParticipantId,
+  selectedRestaurantId,
+  onSelect,
+  isSelecting,
+}) {
   if (restaurants.length === 0) {
     return <EmptyState message="주변 식당을 찾지 못했습니다." />
   }
@@ -12,6 +23,8 @@ function RestaurantList({ restaurants, selections = [], myParticipantId, onSelec
   const mySelection = selections.find(
     (selection) => String(selection.participantId) === String(myParticipantId)
   )
+  const checkedRestaurantId =
+    selectedRestaurantId === undefined ? mySelection?.restaurantId : selectedRestaurantId
 
   const addedList = restaurants.filter((restaurant) => restaurant.source === 'MANUAL')
   const nearbyList = restaurants.filter((restaurant) => restaurant.source !== 'MANUAL')
@@ -24,7 +37,7 @@ function RestaurantList({ restaurants, selections = [], myParticipantId, onSelec
       selectedCount={
         selections.filter((selection) => selection.restaurantId === restaurant.restaurantId).length
       }
-      isSelectedByMe={mySelection?.restaurantId === restaurant.restaurantId}
+      isSelectedByMe={checkedRestaurantId === restaurant.restaurantId}
       onSelect={onSelect}
       isSelecting={isSelecting}
     />

@@ -109,15 +109,18 @@ function RestaurantSearchForm({ lat, lng, onAdd, isAdding }) {
                 </p>
                 <p className="mt-0.5 truncate text-[13px] text-ink-soft">{place.category_name}</p>
               </div>
-              <Button
-                variant="secondary"
-                size="sm"
-                className="shrink-0"
+              {/* 목록이 길어서 글자 버튼이 줄마다 반복되면 시끄럽다. 동그란 + 하나로 줄인다. */}
+              <button
+                type="button"
                 onClick={() => handleAdd(place)}
                 disabled={isAdding}
+                aria-label={`${place.place_name} 추가`}
+                className="flex size-11 shrink-0 items-center justify-center rounded-full bg-accent-tint text-accent-ink transition-transform duration-150 active:scale-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-point-orange disabled:pointer-events-none disabled:opacity-40"
               >
-                추가
-              </Button>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" className="size-5" aria-hidden="true">
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+              </button>
             </Card>
           ))}
         </ul>

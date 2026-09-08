@@ -32,22 +32,27 @@ function RoomCodeCard({ roomUuid }) {
   }
 
   return (
-    <Card as="section" className="p-5 text-center">
-      <h2 className="text-xs font-extrabold tracking-[0.16em] text-accent-ink">방이 만들어졌어요</h2>
+    <Card as="section" className="p-4">
+      <h2 className="text-center text-[17px] font-extrabold tracking-tight text-app-text">
+        방이 만들어졌어요!
+      </h2>
+      <p className="mt-1 text-center text-xs text-ink-soft">아래 링크를 친구에게 보내주세요.</p>
 
-      {/* 방 코드가 이 카드의 주인공이다. 남에게 불러줘야 하는 값이라 크고 또렷하게. */}
-      <p className="mt-3 break-all text-2xl font-extrabold tracking-tight text-app-text" data-numeric>
+      {/* UUID 는 길어서 그대로 키우면 두 줄로 넘친다. 작은 고정폭 글꼴로 한 덩어리로 보여주고,
+          실제 공유는 아래 복사 버튼으로 한다. */}
+      <p className="mt-3 break-all rounded-tile bg-fill px-3 py-2.5 text-center font-mono text-xs leading-relaxed text-ink-soft">
         {roomUuid}
       </p>
-      <p className="mt-3 break-all rounded-tile bg-fill px-3 py-2 text-xs text-ink-soft">
-        {inviteLink}
-      </p>
 
-      {copyError && <ErrorMessage message={copyError} />}
+      {copyError && (
+        <div className="mt-3">
+          <ErrorMessage message={copyError} />
+        </div>
+      )}
 
       {/* 이 화면의 주 동작은 중간지점 찾기라 그쪽에 채움 버튼을 양보한다. */}
-      <Button variant="secondary" fullWidth className="mt-4" onClick={handleCopyLink}>
-        {isCopied ? '복사됨!' : '링크 복사하기'}
+      <Button variant="secondary" fullWidth className="mt-3" onClick={handleCopyLink}>
+        {isCopied ? '링크 복사됨!' : '초대 링크 복사하기'}
       </Button>
     </Card>
   )
