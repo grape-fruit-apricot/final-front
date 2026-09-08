@@ -23,6 +23,8 @@ import RoomCodeCard from '../components/common/RoomCodeCard'
 import GameResult from '../components/common/GameResult'
 import RouteDetail from '../components/common/RouteDetail'
 import ModeVote from '../components/common/ModeVote'
+import GameLobby from '../components/common/GameLobby'
+import FloatingConfirmBar from '../components/common/FloatingConfirmBar'
 import TreasureBagGame from '../components/common/TreasureBagGame'
 import MidpointMap from '../components/map/MidpointMap'
 
@@ -67,6 +69,8 @@ function MainPage() {
   // 목록에서 눌러만 두고 아직 서버에 보내지 않은 식당.
   // 누르는 즉시 확정되면 잘못 눌렀을 때 되돌릴 방법이 없어서, 확정은 아래 버튼이 맡는다.
   const [pendingRestaurantId, setPendingRestaurantId] = useState(null)
+  // 투표도 식당 고르기와 같은 두 단계다. 누르는 것은 표시만 바꾸고, 표는 확정 바가 보낸다.
+  const [pendingMode, setPendingMode] = useState(null)
 
   useEffect(() => {
     // 방을 옮기면 이전 방의 응답이 늦게 도착해 새 방의 상태를 덮어쓸 수 있다.
@@ -295,6 +299,16 @@ function MainPage() {
     }
   }
 
+  const handlePickMode = (voteMode) => {
+    setStartError(null)
+    setPendingMode(voteMode)
+  }
+
+  const handleConfirmVote = () => {
+    if (pendingMode == null) return
+    handleVote(pendingMode)
+  }
+
   const handleStartGame = () => {
     setGameError(null)
     setIsStarting(true)
@@ -356,6 +370,9 @@ function MainPage() {
   const isChoosingRestaurant =
     !result && !game && !modeVote && Boolean(midpoint) && (!hasSelected || isReselecting)
 
+  // 아직 방식이 정해지지 않은 투표 중일 때만 투표 확정 바를 띄운다.
+  const isChoosingMode = Boolean(modeVote) && !modeVote.decidedMode
+
   // 방장은 전원이 준비되지 않아도 시작할 수 있다. 대신 게임에 들어갈 인원(방장 + 준비 완료)이
   // 최소 2명은 되어야 한다(서버도 game.min-participants 로 같은 기준을 다시 확인한다).
   const readyPlayerCount = participants.filter(
@@ -377,7 +394,8 @@ function MainPage() {
       <PageHeader title="딱!" showBack={false} />
       <PageSheet
         className={
-          isChoosingRestaurant && pendingRestaurantId != null
+          (isChoosingRestaurant && pendingRestaurantId != null) ||
+          (isChoosingMode && pendingMode != null)
             ? 'pb-[calc(env(safe-area-inset-bottom)+11rem)]'
             : 'pb-[calc(env(safe-area-inset-bottom)+7rem)]'
         }
@@ -427,47 +445,39 @@ function MainPage() {
           )}
         </div>
       ) : modeVote ? (
-        <div className="flex flex-col gap-3">
-          {startError && <ErrorMessage message={startError} />}
-          {gameError && <ErrorMessage message={gameError} />}
-
+        // GameLobby / ModeVote 는 남은 높이를 채우도록 flex-1 을 쓴다.
+        // 감싸는 쪽도 flex-1 이어야 그 높이가 실제로 전달된다.
+        <div className="flex min-h-0 flex-1 flex-col gap-3">
           {modeVote.decidedMode === 'GAME' ? (
-            <>
-              <h2 className="text-center text-subhead font-extrabold text-app-text">게임으로 정해졌습니다</h2>
-              <p className="text-center text-[15px] text-ink-soft">
-                보물 주머니에서 당첨을 찾은 사람이 고른 식당으로 정해집니다.
-              </p>
-              {isHost && (
-                <>
-                  <Button
-                    variant="primary"
-                    size="lg"
-                    fullWidth
-                    className="mt-4"
-                    onClick={handleStartGame}
-                    disabled={readyPlayerCount < 2 || isStarting}
-                  >
-                    {isStarting ? '게임 여는 중...' : '게임 시작'}
-                  </Button>
-                  <p className="text-center text-xs text-ink-soft">
-                    방장과 준비를 마친 참가자 {readyPlayerCount}명이 참여합니다.
-                  </p>
-                  <Button variant="plain" fullWidth onClick={handleFallbackToRandom} disabled={isStarting}>
-                    무작위로 진행하기
-                  </Button>
-                </>
-              )}
-            </>
-          ) : modeVote.decidedMode === 'RANDOM' ? (
-            <p className="text-center text-[15px] text-ink-soft">무작위로 정하는 중입니다...</p>
-          ) : (
-            <ModeVote
-              status={modeVote}
+            <GameLobby
               participants={participants}
-              myParticipantId={myParticipantId}
-              onVote={handleVote}
-              isVoting={isVoting}
+              readyPlayerCount={readyPlayerCount}
+              isHost={isHost}
+              isStarting={isStarting}
+              onStart={handleStartGame}
+              onFallback={handleFallbackToRandom}
+              startError={startError}
+              gameError={gameError}
             />
+          ) : modeVote.decidedMode === 'RANDOM' ? (
+            <>
+              {startError && <ErrorMessage message={startError} />}
+              {gameError && <ErrorMessage message={gameError} />}
+              <p className="text-center text-[15px] text-ink-soft">무작위로 정하는 중입니다...</p>
+            </>
+          ) : (
+            <>
+              {startError && <ErrorMessage message={startError} />}
+              {gameError && <ErrorMessage message={gameError} />}
+              <ModeVote
+                status={modeVote}
+                participants={participants}
+                myParticipantId={myParticipantId}
+                pickedMode={pendingMode}
+                onPick={handlePickMode}
+                isVoting={isVoting}
+              />
+            </>
           )}
         </div>
       ) : midpoint ? (
@@ -597,29 +607,25 @@ function MainPage() {
       </PageSheet>
 
       {/* 누르는 것과 확정하는 것을 나눈다. 잘못 눌러도 이 버튼을 누르기 전까지는 되돌릴 수 있다.
-          떠 있는 네브 바로 위에 붙고, 무언가 고른 뒤에만 올라온다.
-          고르는 화면에서는 붙여둔 채 보이기만 바꾼다. 고를 때마다 붙였다 떼면 올라오는 동작을 줄 수 없다.
-          안 보일 때는 disabled 라 Button 이 pointer-events 를 끄므로 투명한 채로 눌리지 않는다. */}
+          두 바는 서로 다른 단계에서만 뜨므로 화면에 겹치지 않는다. */}
       {isChoosingRestaurant && (
-        <div
-          className={`pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+6.25rem)] z-40 px-3.5 transition-[opacity,transform] duration-200 ${
-            pendingRestaurantId == null ? 'translate-y-3 opacity-0' : 'translate-y-0 opacity-100'
-          }`}
-          aria-hidden={pendingRestaurantId == null}
+        <FloatingConfirmBar
+          isVisible={pendingRestaurantId != null}
+          onConfirm={handleConfirmSelection}
+          disabled={isSelecting}
         >
-          <div className="mx-auto max-w-[430px]">
-            <Button
-              variant="primary"
-              size="lg"
-              fullWidth
-              className="pointer-events-auto shadow-nav"
-              onClick={handleConfirmSelection}
-              disabled={pendingRestaurantId == null || isSelecting}
-            >
-              {isSelecting ? '선택하는 중...' : '선택 완료'}
-            </Button>
-          </div>
-        </div>
+          {isSelecting ? '선택하는 중...' : '선택 완료'}
+        </FloatingConfirmBar>
+      )}
+
+      {isChoosingMode && (
+        <FloatingConfirmBar
+          isVisible={pendingMode != null}
+          onConfirm={handleConfirmVote}
+          disabled={isVoting}
+        >
+          {isVoting ? '투표하는 중...' : '투표하기'}
+        </FloatingConfirmBar>
       )}
     </div>
   )

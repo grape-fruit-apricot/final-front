@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useOutletContext, useParams } from 'react-router-dom'
 import useFetchMessageList from '../hooks/useFetchMessageList'
 import useMyParticipantId from '../hooks/useMyParticipantId'
 import useRoomSocket from '../hooks/useRoomSocket'
 import PageHeader from '../components/layout/PageHeader'
+import ChatParticipantStrip from '../components/chat/ChatParticipantStrip'
 import MessageList from '../components/chat/MessageList'
 import MessageInput from '../components/chat/MessageInput'
 import LoadingSpinner from '../components/common/LoadingSpinner'
@@ -12,6 +13,9 @@ import ErrorMessage from '../components/common/ErrorMessage'
 function ChatPage() {
   const { roomUuid } = useParams()
   const myParticipantId = useMyParticipantId(roomUuid)
+
+  // 참가자 목록은 RoomLayout 이 소켓으로 최신 상태를 들고 있다. 여기서 따로 조회하지 않는다.
+  const { participants } = useOutletContext()
 
   const { fetch: fetchMessages } = useFetchMessageList()
   const [messages, setMessages] = useState([])
@@ -80,6 +84,9 @@ function ChatPage() {
       {/* 대화는 시트가 스크롤을 직접 맡아야 해서 PageSheet 대신 같은 모양을 여기서 만든다.
           PageSheet 의 세로 여백·gap 이 목록 스크롤 계산을 흐린다. */}
       <div className="flex min-h-0 flex-1 flex-col rounded-t-[28px] border-t border-app-text/12 bg-background px-4 pb-3 pt-2 shadow-glass">
+        {/* 누가 이 방에 있는지 먼저 보여준다. 말풍선만 있으면 조용한 사람은 없는 것처럼 보인다. */}
+        <ChatParticipantStrip participants={participants} myParticipantId={myParticipantId} />
+
         <MessageList messages={messages} myParticipantId={myParticipantId} />
         <MessageInput onSend={handleSend} />
       </div>
