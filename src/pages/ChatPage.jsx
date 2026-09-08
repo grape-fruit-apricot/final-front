@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom'
 import useFetchMessageList from '../hooks/useFetchMessageList'
 import useMyParticipantId from '../hooks/useMyParticipantId'
 import useRoomSocket from '../hooks/useRoomSocket'
+import PageHeader from '../components/layout/PageHeader'
 import MessageList from '../components/chat/MessageList'
 import MessageInput from '../components/chat/MessageInput'
 import LoadingSpinner from '../components/common/LoadingSpinner'
@@ -73,10 +74,15 @@ function ChatPage() {
   }
 
   return (
-    <div className="flex h-[calc(100dvh-5rem)] flex-col bg-background px-4 pt-4">
-      <h1 className="text-lg font-semibold text-app-text">채팅</h1>
-      <MessageList messages={messages} myParticipantId={myParticipantId} />
-      <MessageInput onSend={handleSend} />
+    // 떠 있는 탭바(64px + 아래 여백 + safe-area)만큼 빼야 입력줄이 탭바에 가리지 않는다.
+    <div className="flex h-[calc(100dvh-5.75rem-env(safe-area-inset-bottom))] flex-col bg-header">
+      <PageHeader title="채팅" showBack={false} />
+      {/* 대화는 시트가 스크롤을 직접 맡아야 해서 PageSheet 대신 같은 모양을 여기서 만든다.
+          PageSheet 의 세로 여백·gap 이 목록 스크롤 계산을 흐린다. */}
+      <div className="flex min-h-0 flex-1 flex-col rounded-t-[28px] border-t border-app-text/12 bg-background px-4 pb-3 pt-2 shadow-glass">
+        <MessageList messages={messages} myParticipantId={myParticipantId} />
+        <MessageInput onSend={handleSend} />
+      </div>
     </div>
   )
 }

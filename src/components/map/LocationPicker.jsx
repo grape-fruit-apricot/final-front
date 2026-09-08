@@ -1,13 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
 import { useKakaoMapsLoader } from '../../hooks/useKakaoMapsLoader'
+import { useKakaoMapResize } from '../../hooks/useKakaoMapResize'
+import { createPinContent } from '../../utils/mapMarker'
+import Button from '../common/Button'
 import ErrorMessage from '../common/ErrorMessage'
 
 const KAKAO_JS_KEY = import.meta.env.VITE_KAKAO_JS_KEY
 // 지도가 처음 뜰 때 보여줄 중심좌표(실제 위치는 지도를 클릭하거나 검색해서 고른다)
 const DEFAULT_CENTER = { lat: 37.5696, lng: 126.9842 }
 
-// 지도를 클릭하거나 주소를 검색해서 좌표 하나를 고르는 공통 컴포넌트
-function LocationPicker({ value, onChange, height = 192 }) {
+// 지도를 클릭하거나 주소를 검색해서 좌표 하나를 고르는 공통 컴포넌트.
+// fill 을 켜면 고정 높이 대신 남은 세로 공간을 지도가 전부 차지한다.
+function LocationPicker({ value, onChange, height = 300, fill = false }) {
   const containerRef = useRef(null)
   const mapRef = useRef(null)
   const markerRef = useRef(null)
@@ -18,6 +22,9 @@ function LocationPicker({ value, onChange, height = 192 }) {
     onChangeRef.current = onChange
   })
 
+  // fill 이면 지도 크기가 레이아웃에 따라 정해지므로, 크기가 바뀔 때마다 다시 맞춰야 한다.
+  useKakaoMapResize(containerRef, mapRef)
+
   const [query, setQuery] = useState('')
   const [isSearching, setIsSearching] = useState(false)
   const [searchError, setSearchError] = useState(null)
@@ -26,7 +33,13 @@ function LocationPicker({ value, onChange, height = 192 }) {
     if (markerRef.current) {
       markerRef.current.setPosition(latlng)
     } else {
-      markerRef.current = new window.kakao.maps.Marker({ position: latlng, map: mapRef.current })
+      markerRef.current = new window.kakao.maps.CustomOverlay({
+        position: latlng,
+        map: mapRef.current,
+        // 핀 끝이 좌표에 놓이게 한다.
+        yAnchor: 1,
+        content: createPinContent({ label: '출발지' }),
+      })
     }
     mapRef.current.panTo(latlng)
   }
@@ -90,8 +103,12 @@ function LocationPicker({ value, onChange, height = 192 }) {
   }
 
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex gap-2">
+    <div className={`flex flex-col gap-2 ${fill ? "min-h-0 flex-1" : ""}`}>
+      <div className="flex items-center gap-1.5 rounded-full border border-edge bg-surface p-1.5 pl-3 shadow-surface">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="h-[18px] w-[18px] flex-none text-accent-ink" aria-hidden="true">
+          <circle cx="11" cy="11" r="7" />
+          <path d="M20 20l-3.5-3.5" />
+        </svg>
         <input
           type="text"
           value={query}
@@ -103,26 +120,34 @@ function LocationPicker({ value, onChange, height = 192 }) {
             }
           }}
           placeholder="주소/장소 검색"
-          className="min-h-11 flex-1 rounded-lg border border-main-navy bg-white px-4 text-app-text"
+          className="min-h-11 min-w-0 flex-1 bg-transparent px-2 text-[15px] text-app-text placeholder:text-ink-faint focus:outline-none"
         />
-        <button
-          type="button"
-          onClick={handleSearch}
-          disabled={isSearching}
-          className="min-h-11 rounded-lg bg-point-orange px-4 font-semibold text-white disabled:opacity-60"
-        >
+        <Button variant="primary" size="sm" className="flex-none" onClick={handleSearch} disabled={isSearching}>
           검색
-        </button>
+        </Button>
       </div>
       {searchError && <ErrorMessage message={searchError} />}
-      <div ref={containerRef} className="w-full rounded-lg bg-background" style={{ height }}>
+      <div
+        ref={containerRef}
+        className={`w-full overflow-hidden rounded-card border border-edge bg-fill shadow-surface ${
+          fill ? 'min-h-0 flex-1' : ''
+        }`}
+        style={fill ? undefined : { height }}
+      >
         {!KAKAO_JS_KEY && (
-          <p className="p-4 text-sm text-app-text/60">지도를 불러오려면 VITE_KAKAO_JS_KEY 설정이 필요합니다.</p>
+          <p className="p-4 text-sm text-ink-soft">지도를 불러오려면 VITE_KAKAO_JS_KEY 설정이 필요합니다.</p>
         )}
       </div>
       {/* 좌표 숫자는 보여주지 않는다. 고른 위치는 지도 위 마커로 확인하면 되고,
           위도·경도는 사용자가 판단에 쓸 수 있는 정보가 아니다. */}
-      {value && <p className="text-xs text-white/70">위치가 선택되었습니다.</p>}
+      {value && (
+        <p className="flex items-center gap-1.5 px-1 text-[13px] font-bold text-accent-ink">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" className="size-4 flex-none" aria-hidden="true">
+            <path d="M5 12.5 10 17.5 19 7" />
+          </svg>
+          위치가 선택되었습니다
+        </p>
+      )}
     </div>
   )
 }

@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { copyToClipboard } from '../../utils/clipboard'
+import Button from './Button'
+import Card from './Card'
 import ErrorMessage from './ErrorMessage'
 
 // 방 코드와 초대 링크를 보여주고 링크를 복사하는 카드.
@@ -30,27 +32,29 @@ function RoomCodeCard({ roomUuid }) {
   }
 
   return (
-    <section className="rounded-2xl bg-white p-4 text-center">
-      <h2 className="font-semibold text-app-text">방이 만들어졌어요!</h2>
+    <Card as="section" className="p-4">
+      <h2 className="text-center text-[17px] font-extrabold tracking-tight text-app-text">
+        방이 만들어졌어요!
+      </h2>
+      <p className="mt-1 text-center text-xs text-ink-soft">아래 링크를 친구에게 보내주세요.</p>
 
-      <p className="mt-3 break-all rounded-xl border-2 border-main-navy/20 px-3 py-3 text-xl font-bold text-main-navy">
+      {/* UUID 는 길어서 그대로 키우면 두 줄로 넘친다. 작은 고정폭 글꼴로 한 덩어리로 보여주고,
+          실제 공유는 아래 복사 버튼으로 한다. */}
+      <p className="mt-3 break-all rounded-tile bg-fill px-3 py-2.5 text-center font-mono text-xs leading-relaxed text-ink-soft">
         {roomUuid}
       </p>
-      <p className="mt-2 break-all rounded-lg border border-main-navy/15 px-3 py-2 text-xs text-app-text/70">
-        {inviteLink}
-      </p>
 
-      {copyError && <ErrorMessage message={copyError} />}
+      {copyError && (
+        <div className="mt-3">
+          <ErrorMessage message={copyError} />
+        </div>
+      )}
 
-      {/* 이 화면의 주 동작은 중간지점 찾기라 그쪽에 포인트 색을 양보한다. */}
-      <button
-        type="button"
-        onClick={handleCopyLink}
-        className="mt-3 min-h-11 w-full rounded-lg bg-main-navy font-semibold text-white"
-      >
-        {isCopied ? '복사됨!' : '링크 복사하기'}
-      </button>
-    </section>
+      {/* 이 화면의 주 동작은 중간지점 찾기라 그쪽에 채움 버튼을 양보한다. */}
+      <Button variant="secondary" fullWidth className="mt-3" onClick={handleCopyLink}>
+        {isCopied ? '링크 복사됨!' : '초대 링크 복사하기'}
+      </Button>
+    </Card>
   )
 }
 

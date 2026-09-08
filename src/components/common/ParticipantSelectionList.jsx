@@ -1,3 +1,4 @@
+import ListGroup from './ListGroup'
 import EmptyState from './EmptyState'
 
 // 참가자별로 어떤 식당을 골랐는지 보여주는 목록.
@@ -19,24 +20,37 @@ function ParticipantSelectionList({ participants, selections, restaurants }) {
     return restaurant?.name ?? null
   }
 
+  // 흰 카드를 사람 수만큼 띄우지 않고 컨테이너 하나에 담는다.
   return (
-    <ul className="flex flex-col gap-3">
+    <ListGroup>
       {participants.map((participant) => {
         const restaurantName = findRestaurantName(participant.participantId)
         const isReady = participant.isReady === 'Y'
 
         return (
-          <li key={participant.participantId} className="flex items-center justify-between gap-4">
-            <span className={`truncate ${isReady ? 'text-point-orange' : 'text-white'}`}>
-              {participant.nickname}
+          <div
+            key={participant.participantId}
+            className="flex min-h-14 items-center justify-between gap-4 px-4 py-3"
+          >
+            <span className="flex min-w-0 items-center gap-2">
+              {/* 준비 완료는 색이 아니라 점으로 알린다. 색만으로 구분하면 못 보는 사람이 생긴다. */}
+              <span
+                className={`size-2 flex-none rounded-full ${isReady ? 'bg-point-orange' : 'bg-hairline'}`}
+                aria-hidden="true"
+              />
+              <span className="truncate text-[17px] font-bold tracking-tight text-app-text">
+                {participant.nickname}
+              </span>
             </span>
-            <span className={`truncate ${restaurantName ? 'text-white' : 'text-white/40'}`}>
+            <span
+              className={`truncate text-[15px] ${restaurantName ? 'font-bold text-app-text' : 'text-ink-faint'}`}
+            >
               {restaurantName ?? '고르는 중...'}
             </span>
-          </li>
+          </div>
         )
       })}
-    </ul>
+    </ListGroup>
   )
 }
 

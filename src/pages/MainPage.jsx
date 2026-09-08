@@ -10,6 +10,9 @@ import useFetchRouteResult from '../hooks/useFetchRouteResult'
 import useFetchModeVote from '../hooks/useFetchModeVote'
 import useFetchGameStatus from '../hooks/useFetchGameStatus'
 import useRoomSocket from '../hooks/useRoomSocket'
+import Button from '../components/common/Button'
+import PageHeader from '../components/layout/PageHeader'
+import PageSheet from '../components/layout/PageSheet'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 import ErrorMessage from '../components/common/ErrorMessage'
 import ParticipantList from '../components/common/ParticipantList'
@@ -61,6 +64,9 @@ function MainPage() {
   const [isRouteOpen, setIsRouteOpen] = useState(false)
   // 이미 고른 사람이 다시 고르는 중인지. 서버는 선택을 덮어쓰므로(MERGE) 화면만 되돌려주면 된다.
   const [isReselecting, setIsReselecting] = useState(false)
+  // 목록에서 눌러만 두고 아직 서버에 보내지 않은 식당.
+  // 누르는 즉시 확정되면 잘못 눌렀을 때 되돌릴 방법이 없어서, 확정은 아래 버튼이 맡는다.
+  const [pendingRestaurantId, setPendingRestaurantId] = useState(null)
 
   useEffect(() => {
     // 방을 옮기면 이전 방의 응답이 늦게 도착해 새 방의 상태를 덮어쓸 수 있다.
@@ -239,12 +245,22 @@ function MainPage() {
     })
   }
 
+  // 목록에서 누르는 것은 표시만 바꾼다. 서버로는 보내지 않는다.
+  const handlePickRestaurant = (restaurantId) => {
+    setSelectError(null)
+    setPendingRestaurantId(restaurantId)
+  }
+
   // 선택 결과도 소켓으로 갱신된 현황이 돌아오므로 여기서 다시 조회하지 않는다.
-  const handleSelectRestaurant = async (restaurantId) => {
+  const handleConfirmSelection = async () => {
+    if (pendingRestaurantId == null) return
+
     setSelectError(null)
     try {
-      await createSelection(roomUuid, myParticipantId, restaurantId)
+      await createSelection(roomUuid, myParticipantId, pendingRestaurantId)
       // 고르고 나면 현황 화면으로 돌아간다. 실패하면 목록에 남아 다시 고를 수 있어야 한다.
+      // pendingRestaurantId 는 비우지 않는다. 소켓으로 selections 가 도착하기 전에 비우면
+      // 그 사이 목록에서 체크가 잠깐 풀렸다가 화면이 넘어간다.
       setIsReselecting(false)
     } catch (err) {
       setSelectError(err?.response?.data?.message ?? '식당을 선택하지 못했습니다.')
@@ -331,9 +347,15 @@ function MainPage() {
   const isReady = me?.isReady === 'Y'
 
   // 내가 식당을 고르면 다른 참가자들의 선택을 지켜보는 화면으로 넘어간다.
-  const hasSelected = selections.some(
+  const mySelection = selections.find(
     (selection) => String(selection.participantId) === String(myParticipantId)
   )
+  const hasSelected = Boolean(mySelection)
+  // 식당을 고르는 중인 화면인지. 아래 렌더 분기(result > game > modeVote > midpoint)와 조건이 같아야
+  // 확정 바가 엉뚱한 화면에 떠 있지 않는다.
+  const isChoosingRestaurant =
+    !result && !game && !modeVote && Boolean(midpoint) && (!hasSelected || isReselecting)
+
   // 방장은 전원이 준비되지 않아도 시작할 수 있다. 대신 게임에 들어갈 인원(방장 + 준비 완료)이
   // 최소 2명은 되어야 한다(서버도 game.min-participants 로 같은 기준을 다시 확인한다).
   const readyPlayerCount = participants.filter(
@@ -349,11 +371,19 @@ function MainPage() {
   }
 
   return (
-    <div className="min-h-screen bg-main-navy p-4 pb-24">
-      <h1 className="text-lg font-semibold text-white">진행</h1>
-
+    // 탭 화면이라 되돌아갈 곳이 없다(showBack={false}).
+    // pb-28 은 떠 있는 하단 네브 자리다. 시트 배경 안쪽에 둬야 색이 끊기지 않는다.
+    <div className="flex min-h-screen flex-col bg-header">
+      <PageHeader title="딱!" showBack={false} />
+      <PageSheet
+        className={
+          isChoosingRestaurant && pendingRestaurantId != null
+            ? 'pb-[calc(env(safe-area-inset-bottom)+11rem)]'
+            : 'pb-[calc(env(safe-area-inset-bottom)+7rem)]'
+        }
+      >
       {result ? (
-        <div className="mt-4">
+        <div>
           {isRouteOpen ? (
             <RouteDetail
               result={result}
@@ -373,7 +403,7 @@ function MainPage() {
           )}
         </div>
       ) : game ? (
-        <div className="mt-4">
+        <div>
           <TreasureBagGame
             status={game}
             myParticipantId={myParticipantId}
@@ -384,53 +414,52 @@ function MainPage() {
             errorMessage={gameError}
           />
           {game.status === 'ABORTED' && isHost && (
-            <button
-              type="button"
+            <Button
+              variant="primary"
+              size="lg"
+              fullWidth
+              className="mt-4"
               onClick={handleFallbackToRandom}
               disabled={isStarting}
-              className="mt-4 min-h-11 w-full rounded-lg bg-point-orange font-semibold text-white disabled:bg-white/30 disabled:text-white/60"
             >
               {isStarting ? '결과 뽑는 중...' : '무작위로 진행하기'}
-            </button>
+            </Button>
           )}
         </div>
       ) : modeVote ? (
-        <div className="mt-4 flex flex-col gap-3">
+        <div className="flex flex-col gap-3">
           {startError && <ErrorMessage message={startError} />}
           {gameError && <ErrorMessage message={gameError} />}
 
           {modeVote.decidedMode === 'GAME' ? (
             <>
-              <h2 className="text-center font-semibold text-white">게임으로 정해졌습니다</h2>
-              <p className="text-center text-sm text-white/70">
+              <h2 className="text-center text-subhead font-extrabold text-app-text">게임으로 정해졌습니다</h2>
+              <p className="text-center text-[15px] text-ink-soft">
                 보물 주머니에서 당첨을 찾은 사람이 고른 식당으로 정해집니다.
               </p>
               {isHost && (
                 <>
-                  <button
-                    type="button"
+                  <Button
+                    variant="primary"
+                    size="lg"
+                    fullWidth
+                    className="mt-4"
                     onClick={handleStartGame}
                     disabled={readyPlayerCount < 2 || isStarting}
-                    className="mt-4 min-h-11 w-full rounded-lg bg-point-orange font-semibold text-white disabled:bg-white/30 disabled:text-white/60"
                   >
                     {isStarting ? '게임 여는 중...' : '게임 시작'}
-                  </button>
-                  <p className="text-center text-xs text-white/60">
+                  </Button>
+                  <p className="text-center text-xs text-ink-soft">
                     방장과 준비를 마친 참가자 {readyPlayerCount}명이 참여합니다.
                   </p>
-                  <button
-                    type="button"
-                    onClick={handleFallbackToRandom}
-                    disabled={isStarting}
-                    className="min-h-11 w-full rounded-lg bg-white/10 font-semibold text-white/80 disabled:opacity-60"
-                  >
+                  <Button variant="plain" fullWidth onClick={handleFallbackToRandom} disabled={isStarting}>
                     무작위로 진행하기
-                  </button>
+                  </Button>
                 </>
               )}
             </>
           ) : modeVote.decidedMode === 'RANDOM' ? (
-            <p className="text-center text-white">무작위로 정하는 중입니다...</p>
+            <p className="text-center text-[15px] text-ink-soft">무작위로 정하는 중입니다...</p>
           ) : (
             <ModeVote
               status={modeVote}
@@ -442,12 +471,12 @@ function MainPage() {
           )}
         </div>
       ) : midpoint ? (
-        <div className="mt-4 flex flex-col gap-3">
+        <div className="flex flex-col gap-3">
           <MidpointMap name={midpoint.name} lat={midpoint.lat} lng={midpoint.lng} />
 
           {hasSelected && !isReselecting ? (
             <>
-              <h2 className="mt-2 text-center font-semibold text-white">참가자들이 고른 식당</h2>
+              <h2 className="mt-2 text-center text-subhead font-extrabold text-app-text">참가자들이 고른 식당</h2>
               <ParticipantSelectionList
                 participants={participants}
                 selections={selections}
@@ -458,41 +487,47 @@ function MainPage() {
               {startError && <ErrorMessage message={startError} />}
 
               {isHost ? (
-                <button
-                  type="button"
+                <Button
+                  variant="primary"
+                  size="lg"
+                  fullWidth
+                  className="mt-4"
                   onClick={handleStart}
                   disabled={isStarting}
-                  className="mt-4 min-h-11 w-full rounded-lg bg-point-orange font-semibold text-white disabled:bg-white/30 disabled:text-white/60"
                 >
                   {isStarting ? '결과 뽑는 중...' : '시작하기'}
-                </button>
+                </Button>
               ) : (
-                <button
-                  type="button"
+                <Button
+                  variant="primary"
+                  size="lg"
+                  fullWidth
+                  className="mt-4"
                   onClick={handleReady}
                   disabled={isReady || isReadying}
-                  className="mt-4 min-h-11 w-full rounded-lg bg-point-orange font-semibold text-white disabled:bg-white/30 disabled:text-white/60"
                 >
                   {isReady ? '준비중' : '준비하기'}
-                </button>
+                </Button>
               )}
 
               {/* 서버가 선택을 덮어쓰므로 몇 번이든 바꿀 수 있다.
                   단 중간지점 단계에서만 허용되어, 게임·결과로 넘어가면 이 화면 자체가 사라진다. */}
-              <button
-                type="button"
+              <Button
+                variant="secondary"
+                fullWidth
                 onClick={() => {
                   setSelectError(null)
+                  // 지금 고른 것이 체크된 채로 시작해야 무엇을 바꾸는지 알 수 있다.
+                  setPendingRestaurantId(mySelection?.restaurantId ?? null)
                   setIsReselecting(true)
                 }}
-                className="min-h-11 w-full rounded-lg border-2 border-point-orange bg-white font-semibold text-point-orange"
               >
                 식당 변경하기
-              </button>
+              </Button>
             </>
           ) : (
             <>
-              <h2 className="mt-2 font-semibold text-white">
+              <h2 className="mt-2 text-title font-extrabold text-app-text">
                 {isReselecting ? '식당 다시 고르기' : '주변 식당'}
               </h2>
               <RestaurantSearchForm
@@ -502,7 +537,7 @@ function MainPage() {
                 isAdding={isAdding}
               />
               {addError && <ErrorMessage message={addError} />}
-              <p className="text-sm text-white/70">
+              <p className="text-sm text-ink-soft">
                 {selections.length}/{participants.length}명 선택 완료
               </p>
               {selectError && <ErrorMessage message={selectError} />}
@@ -510,45 +545,80 @@ function MainPage() {
                 restaurants={restaurants}
                 selections={selections}
                 myParticipantId={myParticipantId}
-                onSelect={handleSelectRestaurant}
+                selectedRestaurantId={pendingRestaurantId}
+                onSelect={handlePickRestaurant}
                 isSelecting={isSelecting}
               />
 
               {/* 마음이 바뀌면 고른 것을 그대로 두고 돌아갈 수 있어야 한다. */}
               {isReselecting && (
-                <button
-                  type="button"
+                <Button
+                  variant="plain"
+                  fullWidth
                   onClick={() => {
                     setSelectError(null)
+                    // 되돌아갈 때는 눌러둔 것을 버리고 서버에 저장된 선택으로 되돌린다.
+                    setPendingRestaurantId(mySelection?.restaurantId ?? null)
                     setIsReselecting(false)
                   }}
-                  className="min-h-11 w-full rounded-lg bg-white/10 font-semibold text-white/80"
                 >
                   변경 취소
-                </button>
+                </Button>
               )}
             </>
           )}
         </div>
       ) : (
         // 아직 중간지점이 없는 첫 단계다. 사람을 모으는 중이라 방 코드를 함께 보여준다.
-        <div className="mt-4 flex flex-col gap-3">
+        <div className="flex flex-col gap-3">
           <RoomCodeCard roomUuid={roomUuid} />
 
-          <p className="text-sm text-white/70">{participants.length}명 참여 중</p>
-          <ParticipantList participants={participants} myParticipantId={myParticipantId} />
+          <ParticipantList
+            title={`참가자 ${participants.length}명`}
+            participants={participants}
+            myParticipantId={myParticipantId}
+          />
 
           {isHost && (
-            <button
-              type="button"
+            <Button
+              variant="primary"
+              size="lg"
+              fullWidth
+              className="mt-1"
               onClick={handleFindMidpoint}
               disabled={isFinding}
-              className="mt-1 min-h-11 w-full rounded-lg bg-point-orange font-semibold text-white disabled:opacity-60"
             >
               {isFinding ? '중간지점 찾는 중...' : '중간지점 찾기'}
-            </button>
+            </Button>
           )}
           {isHost && findError && <ErrorMessage message={findError} />}
+        </div>
+      )}
+      </PageSheet>
+
+      {/* 누르는 것과 확정하는 것을 나눈다. 잘못 눌러도 이 버튼을 누르기 전까지는 되돌릴 수 있다.
+          떠 있는 네브 바로 위에 붙고, 무언가 고른 뒤에만 올라온다.
+          고르는 화면에서는 붙여둔 채 보이기만 바꾼다. 고를 때마다 붙였다 떼면 올라오는 동작을 줄 수 없다.
+          안 보일 때는 disabled 라 Button 이 pointer-events 를 끄므로 투명한 채로 눌리지 않는다. */}
+      {isChoosingRestaurant && (
+        <div
+          className={`pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+6.25rem)] z-40 px-3.5 transition-[opacity,transform] duration-200 ${
+            pendingRestaurantId == null ? 'translate-y-3 opacity-0' : 'translate-y-0 opacity-100'
+          }`}
+          aria-hidden={pendingRestaurantId == null}
+        >
+          <div className="mx-auto max-w-[430px]">
+            <Button
+              variant="primary"
+              size="lg"
+              fullWidth
+              className="pointer-events-auto shadow-nav"
+              onClick={handleConfirmSelection}
+              disabled={pendingRestaurantId == null || isSelecting}
+            >
+              {isSelecting ? '선택하는 중...' : '선택 완료'}
+            </Button>
+          </div>
         </div>
       )}
     </div>
