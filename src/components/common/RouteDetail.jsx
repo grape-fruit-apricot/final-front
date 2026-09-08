@@ -4,16 +4,20 @@ import ListGroup from './ListGroup'
 import EmptyState from './EmptyState'
 import ErrorMessage from './ErrorMessage'
 
+// 확정된 식당은 걸어가기엔 먼 경우가 많아 대중교통을 먼저 둔다.
 const TRAVEL_MODES = [
-  { value: 'WALK', label: '도보' },
   { value: 'TRANSIT', label: '대중교통' },
+  { value: 'WALK', label: '도보' },
 ]
 
 // 확정된 식당까지의 경로 화면. 결과 발표(GameResult)에서 "경로 보기"를 누르면 열린다.
 // 경로와 관련된 것(지도·이동수단·소요시간)은 전부 여기에 모으고, 결과 화면은 발표만 맡는다.
-function RouteDetail({ result, participants, myParticipantId, onBack, onTravelModeChange }) {
+// travelMode 는 result 와 짝이라 MainPage 가 들고 있다. 여기서 바꾸면 경로가 도착하기 전에
+// 목록이 비어 "경로를 찾지 못했습니다"가 뜨고 지도가 언마운트됐다가 새로 만들어진다.
+function RouteDetail({ result, participants, myParticipantId, travelMode, onBack, onTravelModeChange }) {
   const { restaurant, participantRoutes } = result
-  const [travelMode, setTravelMode] = useState('WALK')
+  // 누른 순간 세그먼티드가 먼저 움직이게만 하는 값. 실제 내용은 travelMode 가 정한다.
+  const [pendingMode, setPendingMode] = useState(null)
   const [isChangingMode, setIsChangingMode] = useState(false)
   const [modeError, setModeError] = useState(null)
 
@@ -30,14 +34,16 @@ function RouteDetail({ result, participants, myParticipantId, onBack, onTravelMo
   const handleTravelModeChange = async (nextMode) => {
     if (nextMode === travelMode || isChangingMode) return
 
-    setTravelMode(nextMode)
+    setPendingMode(nextMode)
     setModeError(null)
     setIsChangingMode(true)
     try {
       await onTravelModeChange?.(nextMode)
     } catch (error) {
+      // 실패하면 보고 있던 이동수단이 그대로 남는다. 세그먼티드도 되돌린다.
       setModeError(error)
     } finally {
+      setPendingMode(null)
       setIsChangingMode(false)
     }
   }
@@ -90,7 +96,7 @@ function RouteDetail({ result, participants, myParticipantId, onBack, onTravelMo
         aria-label="이동수단 선택"
       >
         {TRAVEL_MODES.map((mode) => {
-          const isSelected = travelMode === mode.value
+          const isSelected = (pendingMode ?? travelMode) === mode.value
 
           return (
             <button

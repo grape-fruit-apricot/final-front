@@ -7,6 +7,7 @@ import useFetchSelectionList from '../hooks/useFetchSelectionList'
 import useCreateSelection from '../hooks/useCreateSelection'
 import useUpdateReady from '../hooks/useUpdateReady'
 import useFetchRouteResult from '../hooks/useFetchRouteResult'
+import { DEFAULT_TRAVEL_MODE } from '../api/room'
 import useFetchModeVote from '../hooks/useFetchModeVote'
 import useFetchGameStatus from '../hooks/useFetchGameStatus'
 import useRoomSocket from '../hooks/useRoomSocket'
@@ -64,6 +65,10 @@ function MainPage() {
   const [gameError, setGameError] = useState(null)
   // 결과 발표와 경로 안내를 한 탭 안에서 번갈아 보여준다(주소는 그대로 두고 화면만 바꾼다).
   const [isRouteOpen, setIsRouteOpen] = useState(false)
+  // 화면에 그려지고 있는 경로의 이동수단. result 와 짝이라 여기서 함께 들고 있어야 한다.
+  // RouteDetail 안에 두면 이동수단이 먼저 바뀌고 result 가 나중에 도착해서,
+  // 그 사이 한 프레임 동안 "경로를 찾지 못했습니다"가 뜨고 지도가 통째로 다시 만들어진다.
+  const [travelMode, setTravelMode] = useState(DEFAULT_TRAVEL_MODE)
   // 이미 고른 사람이 다시 고르는 중인지. 서버는 선택을 덮어쓰므로(MERGE) 화면만 되돌려주면 된다.
   const [isReselecting, setIsReselecting] = useState(false)
   // 목록에서 눌러만 두고 아직 서버에 보내지 않은 식당.
@@ -233,9 +238,12 @@ function MainPage() {
     }
   }
 
-  const handleTravelModeChange = async (travelMode) => {
-    const routeResult = await fetchRouteResult(roomUuid, travelMode)
+  const handleTravelModeChange = async (nextMode) => {
+    const routeResult = await fetchRouteResult(roomUuid, nextMode)
+    // 두 상태를 붙여서 바꾼다. 같은 이어짐(continuation) 안이라 React 가 한 번에 반영하므로
+    // 이동수단만 먼저 바뀐 중간 상태가 화면에 그려지지 않는다.
     setResult(routeResult)
+    setTravelMode(nextMode)
   }
 
   // 추가에 성공하면 갱신된 목록이 소켓으로 돌아오므로 여기서 목록을 다시 조회하지 않는다.
@@ -408,6 +416,7 @@ function MainPage() {
               participants={participants}
               myParticipantId={myParticipantId}
               onBack={() => setIsRouteOpen(false)}
+              travelMode={travelMode}
               onTravelModeChange={handleTravelModeChange}
             />
           ) : (
