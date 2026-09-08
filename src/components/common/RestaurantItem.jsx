@@ -1,4 +1,5 @@
 import Card from './Card'
+import { toShortCategory } from '../../utils/category'
 
 // 식당 1건(이름 + 분류 + 도로명주소)을 그리는 컴포넌트.
 // 선택 기능이 켜진 화면에서는 카드 전체가 선택 버튼이 되고, 오른쪽 동그라미로 선택 여부를 표시한다.
@@ -12,6 +13,8 @@ function RestaurantItem({
   isSelecting,
 }) {
   const address = restaurant.roadAddress || restaurant.address
+  // 카카오 분류는 "음식점 > 한식 > 국수 > 칼국수" 처럼 길게 온다. 마지막 단계만 쓴다.
+  const shortCategory = toShortCategory(restaurant.category)
   const isSelectable = Boolean(onSelect)
 
   const body = (
@@ -41,7 +44,7 @@ function RestaurantItem({
           )}
         </div>
         <p className="mt-0.5 truncate text-[13px] text-ink-soft">
-          {restaurant.category ? `${restaurant.category} · ${address}` : address}
+          {shortCategory ? `${shortCategory} · ${address}` : address}
         </p>
       </div>
 

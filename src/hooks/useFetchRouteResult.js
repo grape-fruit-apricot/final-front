@@ -6,7 +6,8 @@ function useFetchRouteResult() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  const fetch = async (roomUuid, travelMode = 'WALK') => {
+  // 기본 이동수단은 api/room.js 한 곳에서만 정한다. 여기서 또 정하면 그쪽을 가린다.
+  const fetch = async (roomUuid, travelMode) => {
     setIsLoading(true)
     setError(null)
     try {

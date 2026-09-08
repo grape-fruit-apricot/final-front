@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { toShortCategory } from '../../utils/category'
 import { useKakaoMapsLoader } from '../../hooks/useKakaoMapsLoader'
 import Button from './Button'
 import Card from './Card'
@@ -107,7 +108,7 @@ function RestaurantSearchForm({ lat, lng, onAdd, isAdding }) {
                 <p className="truncate text-[15px] font-bold tracking-tight text-app-text">
                   {place.place_name}
                 </p>
-                <p className="mt-0.5 truncate text-[13px] text-ink-soft">{place.category_name}</p>
+                <p className="mt-0.5 truncate text-[13px] text-ink-soft">{toShortCategory(place.category_name)}</p>
               </div>
               {/* 목록이 길어서 글자 버튼이 줄마다 반복되면 시끄럽다. 동그란 + 하나로 줄인다. */}
               <button

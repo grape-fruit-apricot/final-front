@@ -31,7 +31,12 @@ export function createRestaurant(roomUuid, payload) {
 }
 
 // 확정된 결과(선정 식당 + 참가자별 경로) 조회. 확정 전에는 404가 돌아온다.
-export function fetchRouteResult(roomUuid, travelMode = 'WALK') {
+// 확정된 식당은 걸어가기엔 먼 경우가 많아 대중교통을 기본으로 본다.
+// 화면(MainPage)의 초기 이동수단과 어긋나면 도착한 경로가 걸러져 목록이 비므로
+// 두 곳이 이 상수 하나를 같이 쓴다.
+export const DEFAULT_TRAVEL_MODE = 'TRANSIT'
+
+export function fetchRouteResult(roomUuid, travelMode = DEFAULT_TRAVEL_MODE) {
   return api.get(`/api/rooms/${roomUuid}/routes`, {
     params: { travelMode },
   })
