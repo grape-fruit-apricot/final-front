@@ -7,7 +7,10 @@
 //   danger    되돌릴 수 없는 것(나가기)
 const VARIANTS = {
   primary: 'bg-point-orange text-white shadow-accent active:bg-accent-ink',
-  secondary: 'bg-accent-tint text-accent-ink active:bg-soft-orange',
+  // 불투명 채움 + 테두리. 밝은 바탕 위 밝은 틴트는 명도차가 1.3:1 을 넘기 어려워서,
+  // 색만으로는 버튼 경계가 서지 않는다. 테두리가 그 몫을 맡는다.
+  secondary:
+    'border border-point-orange/30 bg-secondary-fill text-secondary-ink active:bg-secondary-press',
   neutral: 'bg-fill text-app-text active:bg-hairline',
   plain: 'bg-transparent text-accent-ink active:opacity-60',
   danger: 'bg-danger text-white active:opacity-90',
