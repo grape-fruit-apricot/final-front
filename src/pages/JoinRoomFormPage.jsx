@@ -7,6 +7,7 @@ import PageSheet from '../components/layout/PageSheet'
 import LocationPicker from '../components/map/LocationPicker'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 import ErrorMessage from '../components/common/ErrorMessage'
+import { classifyJoinRoomError } from '../utils/joinRoomError'
 
 function JoinRoomFormPage() {
   const { roomUuid } = useParams()
@@ -21,7 +22,11 @@ function JoinRoomFormPage() {
       nickname,
       lat: location.lat,
       lng: location.lng,
-    }).catch(() => null)
+    }).catch((err) => {
+      const failure = classifyJoinRoomError(err)
+      if (failure.path) navigate(failure.path, { replace: true, state: { reason: failure.reason, from: `/join/${roomUuid}` } })
+      return null
+    })
     if (participant) {
       localStorage.setItem(`room:${roomUuid}:participantId`, participant.participantId)
       navigate(`/rooms/${roomUuid}`)
@@ -36,7 +41,7 @@ function JoinRoomFormPage() {
     <div className="flex min-h-screen flex-col bg-header">
       <PageHeader title="방 입장하기" />
       <PageSheet className="pb-6">
-        {error && <ErrorMessage message="참가에 실패했습니다. 닉네임을 확인해주세요." />}
+        {error && !classifyJoinRoomError(error).path && <ErrorMessage message={classifyJoinRoomError(error).message} />}
         <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col gap-3">
           {/* 지도가 남은 세로 공간을 전부 쓴다. 위치를 고르는 화면에서 지도가 주인공이다. */}
           <LocationPicker value={location} onChange={setLocation} fill />

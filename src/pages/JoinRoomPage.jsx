@@ -14,9 +14,12 @@ function JoinRoomPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    const room = await fetch(roomUuid).catch(() => null)
+    const room = await fetch(roomUuid.trim()).catch((err) => {
+      if ([400, 404, 410].includes(err.response?.status)) navigate('/error/room', { replace: true })
+      return null
+    })
     if (room) {
-      navigate(`/join/${roomUuid}`)
+      navigate(`/join/${roomUuid.trim()}`)
     }
   }
 
