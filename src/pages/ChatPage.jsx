@@ -8,7 +8,7 @@ import ChatParticipantStrip from '../components/chat/ChatParticipantStrip'
 import MessageList from '../components/chat/MessageList'
 import MessageInput from '../components/chat/MessageInput'
 import LoadingSpinner from '../components/common/LoadingSpinner'
-import ErrorMessage from '../components/common/ErrorMessage'
+import ErrorRedirect from '../components/common/ErrorRedirect'
 
 function ChatPage() {
   const { roomUuid } = useParams()
@@ -74,7 +74,7 @@ function ChatPage() {
   }
 
   if (loadError) {
-    return <ErrorMessage message="대화 내역을 불러오지 못했습니다." />
+    return <ErrorRedirect />
   }
 
   return (

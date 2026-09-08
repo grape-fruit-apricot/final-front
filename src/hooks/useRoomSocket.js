@@ -54,6 +54,17 @@ function createSocketEntry(roomUuid, participantId) {
     // 이 연결을 쓰고 있는 화면들. 비면 정리 대상이 된다.
     subscribers: new Set(),
     teardownTimerId: null,
+    connectionTimerId: null,
+  }
+
+  const scheduleConnectionError = () => {
+    if (entry.connectionTimerId !== null || entry.subscribers.size === 0) return
+    entry.connectionTimerId = setTimeout(() => {
+      entry.connectionTimerId = null
+      if (entry.subscribers.size > 0 && !entry.client.connected) {
+        window.dispatchEvent(new Event('room-connection-error'))
+      }
+    }, 15000)
   }
 
   entry.client = new Client({
@@ -62,10 +73,15 @@ function createSocketEntry(roomUuid, participantId) {
       roomUuid,
       participantId: String(participantId),
     },
+    beforeConnect: scheduleConnectionError,
+    onWebSocketClose: scheduleConnectionError,
+    onStompError: scheduleConnectionError,
     // 끊기면 stompjs 가 알아서 다시 붙고 그때 이 콜백이 다시 불린다.
     // 재연결하면 서버 쪽 구독은 모두 사라지므로 등록된 화면 전부를 다시 구독시키고,
     // 각자의 onConnect 로 놓친 데이터를 따라잡게 한다.
     onConnect: () => {
+      clearTimeout(entry.connectionTimerId)
+      entry.connectionTimerId = null
       entry.subscribers.forEach((subscriber) => subscribeTopics(entry, subscriber))
     },
   })
@@ -120,6 +136,7 @@ function releaseSocket(key, subscriber) {
     // deactivate 는 비동기라 끊는 데 시간이 걸린다. 그 사이에 끊는 중인 연결을
     // 다시 꺼내 쓰지 않도록 레지스트리에서 먼저 지운다(다음 요청은 새 연결을 연다).
     socketRegistry.delete(key)
+    clearTimeout(entry.connectionTimerId)
     entry.client.deactivate()
   }, TEARDOWN_DELAY)
 }

@@ -7,7 +7,7 @@ import useFetchRoom from '../../hooks/useFetchRoom'
 import useLeaveRoom from '../../hooks/useLeaveRoom'
 import useRoomSocket from '../../hooks/useRoomSocket'
 import LoadingSpinner from '../common/LoadingSpinner'
-import ErrorMessage from '../common/ErrorMessage'
+import ErrorRedirect from '../common/ErrorRedirect'
 
 // 방 진행 화면들의 공통 레이아웃: 탭 콘텐츠(Outlet) + 하단 네브.
 //
@@ -99,7 +99,7 @@ function RoomLayout() {
         {isLoading ? (
           <LoadingSpinner />
         ) : loadError ? (
-          <ErrorMessage message="방 정보를 불러오지 못했습니다." />
+          <ErrorRedirect roomMissing={[404, 410].includes(loadError.response?.status)} />
         ) : (
           <Outlet context={{ roomUuid, myParticipantId, room, participants }} />
         )}
