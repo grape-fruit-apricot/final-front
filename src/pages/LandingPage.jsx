@@ -215,7 +215,7 @@ function LandingPage() {
         <Button variant="primary" size="lg" fullWidth onClick={handleCreateRoom}>
           방 생성하기
         </Button>
-        <Button variant="secondary" size="lg" fullWidth onClick={handleJoinRoom}>
+        <Button variant="outline" size="lg" fullWidth onClick={handleJoinRoom}>
           방 입장하기
         </Button>
       </div>
