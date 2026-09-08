@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import Button from './Button'
 import ErrorMessage from './ErrorMessage'
 import GameTurnStatus from './GameTurnStatus'
 import TreasureBagGrid from './TreasureBagGrid'
@@ -69,8 +70,8 @@ function TreasureBagGame({
   return (
     <div className="flex flex-col gap-4">
       <div className="text-center">
-        <h2 className="font-semibold text-white">보물 주머니</h2>
-        <p className="mt-1 text-sm text-white/70">
+        <h2 className="text-subhead font-extrabold text-app-text">보물 주머니</h2>
+        <p className="mt-1 text-sm text-ink-soft">
           {status.status === 'FINISHED'
             ? `${winner?.nickname ?? '누군가'} 님이 당첨 주머니를 찾았습니다!`
             : status.status === 'ABORTED'
@@ -98,13 +99,9 @@ function TreasureBagGame({
 
       {/* 게임이 시작된 뒤 들어온 사람은 players 에 없어 모든 주머니가 잠긴다(관전). 의도된 동작이다. */}
       {isPlaying && me && !hasLeft && (
-        <button
-          type="button"
-          onClick={onLeave}
-          className="min-h-11 w-full rounded-lg bg-white/10 font-semibold text-white/80"
-        >
+        <Button variant="plain" fullWidth onClick={onLeave}>
           게임에서 나가기
-        </button>
+        </Button>
       )}
     </div>
   )

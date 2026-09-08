@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import RouteMap from '../map/RouteMap'
+import ListGroup from './ListGroup'
 import EmptyState from './EmptyState'
+import ErrorMessage from './ErrorMessage'
 
 const TRAVEL_MODES = [
   { value: 'WALK', label: '도보' },
@@ -41,20 +43,30 @@ function RouteDetail({ result, participants, myParticipantId, onBack, onTravelMo
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-4">
       {/* 탭을 옮기는 게 아니라 결과 발표로 되돌아가는 것이라 라우터를 쓰지 않는다. */}
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-2">
         <button
           type="button"
           onClick={onBack}
           aria-label="결과로 돌아가기"
-          className="-ml-2 flex size-11 shrink-0 items-center justify-center text-white"
+          className="-ml-1.5 flex size-11 shrink-0 items-center justify-center rounded-full text-app-text transition-transform duration-150 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-point-orange"
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="size-5">
             <path d="M15 5l-7 7 7 7" />
           </svg>
         </button>
-        <h2 className="font-semibold text-white">최종 식당 &amp; 경로 안내</h2>
+        <span className="text-xs font-extrabold tracking-[0.16em] text-ink-soft">경로 안내</span>
+      </div>
+
+      <div>
+        <h2 className="text-title font-extrabold text-app-text">{restaurant.name}</h2>
+        <p className="mt-1 text-[15px] text-ink-soft">
+          {me && myRoute
+            ? `내 ${travelModeLabel} 약 ${myRoute.timeMinutes}분 · `
+            : ''}
+          {restaurant.roadAddress || restaurant.address}
+        </p>
       </div>
 
       {me && myRoute ? (
@@ -71,17 +83,12 @@ function RouteDetail({ result, participants, myParticipantId, onBack, onTravelMo
         <EmptyState message={`내 ${travelModeLabel} 경로를 찾지 못했습니다.`} />
       )}
 
-      <div className="rounded-lg bg-white px-4 py-3 text-app-text">
-        <p className="font-semibold">{restaurant.name}</p>
-        {restaurant.category && (
-          <p className="mt-0.5 text-xs text-app-text/60">{restaurant.category}</p>
-        )}
-        <p className="mt-1 text-sm text-app-text/80">
-          {restaurant.roadAddress || restaurant.address}
-        </p>
-      </div>
-
-      <div className="grid grid-cols-2 gap-2 rounded-lg bg-white/10 p-1" aria-label="이동수단 선택">
+      {/* iOS 세그먼티드 컨트롤. 선택된 쪽만 흰 알약으로 떠오른다. */}
+      <div
+        className="grid grid-cols-2 gap-1 rounded-full bg-fill p-1"
+        role="group"
+        aria-label="이동수단 선택"
+      >
         {TRAVEL_MODES.map((mode) => {
           const isSelected = travelMode === mode.value
 
@@ -92,8 +99,8 @@ function RouteDetail({ result, participants, myParticipantId, onBack, onTravelMo
               onClick={() => handleTravelModeChange(mode.value)}
               disabled={isChangingMode}
               aria-pressed={isSelected}
-              className={`min-h-10 rounded-md text-sm font-semibold transition-colors disabled:opacity-60 ${
-                isSelected ? 'bg-point-orange text-white' : 'bg-white text-app-text'
+              className={`min-h-11 rounded-full text-sm font-bold transition-[background-color,color,box-shadow] duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-point-orange disabled:opacity-40 ${
+                isSelected ? 'bg-surface text-app-text shadow-surface' : 'text-ink-soft'
               }`}
             >
               {mode.label}
@@ -103,32 +110,42 @@ function RouteDetail({ result, participants, myParticipantId, onBack, onTravelMo
       </div>
 
       {modeError && (
-        <p className="text-center text-sm text-red-200">
-          {modeError.message || `${travelModeLabel} 경로를 불러오지 못했습니다.`}
-        </p>
+        <ErrorMessage
+          message={modeError.message || `${travelModeLabel} 경로를 불러오지 못했습니다.`}
+        />
       )}
 
-      {me && myRoute && (
-        <p className="text-center text-white">
-          {travelModeLabel} 약 {myRoute.timeMinutes}분
-        </p>
-      )}
-
-      <h2 className="mt-2 font-semibold text-white">참가자별 소요시간</h2>
       {selectedRoutes.length > 0 ? (
-        <ul className="flex flex-col gap-2">
-          {selectedRoutes.map((route) => (
-            <li
-              key={`${route.participantId}:${route.travelMode}`}
-              className="flex items-center justify-between gap-4 text-white"
-            >
-              <span className="truncate">{route.nickname}</span>
-              <span className="shrink-0 text-white/80">
-                {travelModeLabel} {route.timeMinutes}분
-              </span>
-            </li>
-          ))}
-        </ul>
+        <ListGroup title="참가자별 소요시간">
+          {selectedRoutes.map((route) => {
+            const isMe = String(route.participantId) === String(myParticipantId)
+
+            return (
+              <div
+                key={`${route.participantId}:${route.travelMode}`}
+                className="flex min-h-14 items-center justify-between gap-4 px-4 py-3"
+              >
+                <span className="flex min-w-0 items-center gap-3">
+                  {/* 채워진 주황 아바타는 앱 전체에서 "나" 한 가지 뜻으로만 쓴다. */}
+                  <span
+                    className={`flex size-8 flex-none items-center justify-center rounded-full text-[13px] font-extrabold ${
+                      isMe ? 'bg-point-orange text-white' : 'bg-fill text-app-text'
+                    }`}
+                    aria-hidden="true"
+                  >
+                    {route.nickname?.trim().charAt(0) || '?'}
+                  </span>
+                  <span className="truncate text-[17px] font-bold tracking-tight text-app-text">
+                    {route.nickname}
+                  </span>
+                </span>
+                <span className="shrink-0 text-[17px] font-extrabold text-app-text" data-numeric>
+                  {route.timeMinutes}분
+                </span>
+              </div>
+            )
+          })}
+        </ListGroup>
       ) : (
         <EmptyState message={`${travelModeLabel} 경로를 찾지 못했습니다.`} />
       )}

@@ -5,7 +5,7 @@ import { normalizeSegmentType, resolveRouteColors, SEGMENT_STYLES } from '../../
 // 출발지에서 목적지까지 이동수단별 경로를 나누어 그리는 표시용 컴포넌트.
 // 구간 배열을 JSON.stringify 해서 의존성으로 거는 이유는, 참조만 바뀌고 내용이 같을 때
 // 지도를 다시 만들지 않기 위해서다(확대·이동 상태가 초기화되고 자원도 낭비된다).
-function RouteMap({ segments, points, travelMode, start, end, startLabel = '출발', endLabel = '도착', height = 280 }) {
+function RouteMap({ segments, points, travelMode, start, end, startLabel = '출발', endLabel = '도착', height = 400 }) {
   const containerRef = useRef(null)
   const mapRef = useRef(null)
   // 지도 위에 올린 폴리라인·마커·오버레이를 모아둔다. 다시 그리기 전과 화면을 떠날 때
@@ -62,10 +62,10 @@ function RouteMap({ segments, points, travelMode, start, end, startLabel = '출�
         path.forEach((latlng) => bounds.extend(latlng))
       })
 
-      addLabeledMarker(map, overlaysRef.current, start, startLabel, '#1B2A4A')
+      addLabeledMarker(map, overlaysRef.current, start, startLabel, '#17171A')
       bounds.extend(new window.kakao.maps.LatLng(start.lat, start.lng))
 
-      addLabeledMarker(map, overlaysRef.current, end, endLabel, '#F2762E')
+      addLabeledMarker(map, overlaysRef.current, end, endLabel, '#D2401C')
       bounds.extend(new window.kakao.maps.LatLng(end.lat, end.lng))
 
       // 컨테이너가 막 렌더링된 시점엔 지도가 자기 크기를 몰라서, 크기를 다시 계산시킨 뒤
@@ -79,9 +79,13 @@ function RouteMap({ segments, points, travelMode, start, end, startLabel = '출�
 
   return (
     <div className="relative">
-      <div ref={containerRef} className="w-full rounded-lg" style={{ height }} />
+      <div
+        ref={containerRef}
+        className="w-full overflow-hidden rounded-card border border-edge shadow-surface"
+        style={{ height }}
+      />
       {visibleTypes.length > 0 && (
-        <div className="absolute left-2 top-2 z-10 flex flex-wrap gap-2 rounded-md bg-white/90 px-2 py-1 text-xs text-app-text shadow">
+        <div className="absolute left-3 top-3 z-10 flex flex-wrap gap-2.5 rounded-full border border-white/70 bg-glass-strong px-3 py-1.5 text-xs font-bold text-app-text shadow-surface backdrop-blur-md">
           {visibleTypes.map((type) => (
             <div key={type} className="flex items-center gap-1">
               {[...new Set(routeSegments
@@ -115,7 +119,7 @@ function addLabeledMarker(map, overlays, position, label, color) {
       position: latlng,
       map,
       yAnchor: 1.8,
-      content: `<div style="background:${color};color:#fff;padding:2px 8px;border-radius:4px;font-size:12px;font-weight:600;white-space:nowrap;">${label}</div>`,
+      content: `<div style="background:${color};color:#fff;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap;">${label}</div>`,
     })
   )
 }

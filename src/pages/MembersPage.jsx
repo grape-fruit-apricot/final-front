@@ -8,17 +8,19 @@ function MembersPage() {
   const { myParticipantId, room, participants } = useOutletContext()
 
   return (
-    <div className="min-h-screen bg-background p-4 pb-24">
-      <div className="flex items-baseline justify-between">
-        <h1 className="text-lg font-semibold text-app-text">멤버</h1>
-        <p className="text-sm text-app-text/70">
-          {participants.length}/{room.maxParticipants}
+    <div className="min-h-screen bg-background px-4 pb-28 pt-14">
+      <header>
+        <h1 className="text-display font-extrabold text-app-text">멤버</h1>
+        <p className="mt-1 text-[15px] text-ink-soft">
+          {participants.length}명 참여 중 · 최대 {room.maxParticipants}명
         </p>
-      </div>
+      </header>
 
-      <div className="mt-4">
-        <ParticipantList participants={participants} myParticipantId={myParticipantId} />
-      </div>
+      <ParticipantList
+        className="mt-5"
+        participants={participants}
+        myParticipantId={myParticipantId}
+      />
     </div>
   )
 }

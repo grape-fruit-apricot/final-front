@@ -35,7 +35,7 @@ function RestaurantList({ restaurants, selections = [], myParticipantId, onSelec
       {/* 추가된 식당이 없으면 제목만 덩그러니 남지 않도록 묶음 자체를 그리지 않는다. */}
       {addedList.length > 0 && (
         <div className="flex flex-col gap-2">
-          <h3 className="text-sm font-semibold text-white/80">참가자가 추가한 식당</h3>
+          <h3 className="px-1 text-xs font-bold tracking-wide text-ink-soft">참가자가 추가한 식당</h3>
           <ul className="flex flex-col gap-2">{addedList.map(renderItem)}</ul>
         </div>
       )}
@@ -43,7 +43,7 @@ function RestaurantList({ restaurants, selections = [], myParticipantId, onSelec
       {nearbyList.length > 0 && (
         <div className="flex flex-col gap-2">
           {addedList.length > 0 && (
-            <h3 className="text-sm font-semibold text-white/80">중간지점 주변 식당</h3>
+            <h3 className="px-1 text-xs font-bold tracking-wide text-ink-soft">중간지점 주변 식당</h3>
           )}
           <ul className="flex flex-col gap-2">{nearbyList.map(renderItem)}</ul>
         </div>

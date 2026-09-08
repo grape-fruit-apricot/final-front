@@ -1,3 +1,4 @@
+import ListGroup from './ListGroup'
 import EmptyState from './EmptyState'
 
 // 현재 차례와 남은 시간, 참가자별 상태를 보여준다.
@@ -14,36 +15,45 @@ function GameTurnStatus({ status, myParticipantId, remainingSeconds }) {
     <div className="flex flex-col gap-3">
       {status.status === 'PLAYING' && (
         <div className="text-center">
-          <p className="font-semibold text-white">
+          <p className="text-[15px] font-bold text-ink-soft">
             {isMyTurn ? '내 차례입니다' : `${currentPlayer?.nickname ?? '...'} 님의 차례`}
           </p>
-          <p className="text-2xl font-bold text-point-orange">{remainingSeconds}초</p>
+          {/* 남은 시간이 이 화면에서 제일 급한 정보라 제일 크게 둔다. */}
+          <p className="mt-0.5 text-display font-extrabold text-point-orange" data-numeric>
+            {remainingSeconds}초
+          </p>
         </div>
       )}
 
       {players.length === 0 ? (
         <EmptyState message="참가자가 없습니다." />
       ) : (
-        <ul className="flex flex-col gap-2">
-          {players.map((player) => (
-            <li
-              key={player.participantId}
-              className="flex items-center justify-between gap-4 text-white"
-            >
-              <span
-                className={`truncate ${
-                  String(player.participantId) === String(currentParticipantId)
-                    ? 'text-point-orange'
-                    : 'text-white'
+        <ListGroup>
+          {players.map((player) => {
+            const isCurrent = String(player.participantId) === String(currentParticipantId)
+
+            return (
+              <div
+                key={player.participantId}
+                className={`flex min-h-14 items-center justify-between gap-4 px-4 py-3 ${
+                  isCurrent ? 'bg-accent-tint' : ''
                 }`}
               >
-                {player.nickname}
-                {player.isHost === 'Y' && ' (방장)'}
-              </span>
-              <span className="shrink-0 text-white/80">{toPlayerLabel(player)}</span>
-            </li>
-          ))}
-        </ul>
+                <span className="truncate text-[17px] font-bold tracking-tight text-app-text">
+                  {player.nickname}
+                  {player.isHost === 'Y' && ' (방장)'}
+                </span>
+                <span
+                  className={`shrink-0 text-[15px] font-bold ${
+                    player.isWinner === 'Y' ? 'text-accent-ink' : 'text-ink-soft'
+                  }`}
+                >
+                  {toPlayerLabel(player)}
+                </span>
+              </div>
+            )
+          })}
+        </ListGroup>
       )}
     </div>
   )

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import useCreateRoom from '../hooks/useCreateRoom'
 import useJoinRoom from '../hooks/useJoinRoom'
+import Button from '../components/common/Button'
 import BackButton from '../components/common/BackButton'
 import LocationPicker from '../components/map/LocationPicker'
 import LoadingSpinner from '../components/common/LoadingSpinner'
@@ -55,9 +56,9 @@ function CreateRoomPage() {
   }
 
   return (
-    <div className="relative flex min-h-screen flex-col justify-center gap-6 bg-main-navy p-6">
+    <div className="relative flex min-h-screen flex-col justify-center gap-6 bg-background p-6">
       <BackButton />
-      <h1 className="text-center text-xl font-bold text-white">방 생성하기</h1>
+      <h1 className="text-center text-title font-extrabold text-app-text">방 생성하기</h1>
       {error && (
         <ErrorMessage
           message={
@@ -75,15 +76,15 @@ function CreateRoomPage() {
           onChange={(e) => setNickname(e.target.value)}
           placeholder="닉네임"
           required
-          className="min-h-11 w-full rounded-lg border border-main-navy bg-white px-4 text-app-text"
+          className="min-h-12 w-full rounded-tile border border-edge bg-surface px-4 text-[15px] text-app-text shadow-surface placeholder:text-ink-faint focus:border-point-orange focus:outline-none"
         />
         {/* 값이 범위 밖일 수 없도록 자유 입력 대신 선택으로 받는다. */}
-        <label className="flex min-h-11 w-full items-center justify-between gap-3 rounded-lg border border-main-navy bg-white px-4 text-app-text">
-          <span className="shrink-0 text-sm">최대 인원</span>
+        <label className="flex min-h-12 w-full items-center justify-between gap-3 rounded-tile border border-edge bg-surface px-4 text-app-text shadow-surface">
+          <span className="shrink-0 text-[15px] text-ink-soft">최대 인원</span>
           <select
             value={maxParticipants}
             onChange={(e) => setMaxParticipants(Number(e.target.value))}
-            className="min-h-11 bg-white text-right font-semibold text-app-text"
+            className="min-h-11 bg-transparent text-right text-[15px] font-bold text-app-text focus:outline-none"
           >
             {PARTICIPANT_OPTIONS.map((count) => (
               <option key={count} value={count}>
@@ -93,13 +94,9 @@ function CreateRoomPage() {
           </select>
         </label>
 
-        <button
-          type="submit"
-          disabled={!nickname.trim() || !location}
-          className="min-h-11 w-full rounded-lg bg-point-orange font-semibold text-white disabled:opacity-60"
-        >
+        <Button type="submit" variant="primary" size="lg" fullWidth disabled={!nickname.trim() || !location}>
           방 생성하기
-        </button>
+        </Button>
       </form>
     </div>
   )

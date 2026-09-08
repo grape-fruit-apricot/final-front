@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import useJoinRoom from '../hooks/useJoinRoom'
+import Button from '../components/common/Button'
 import BackButton from '../components/common/BackButton'
 import LocationPicker from '../components/map/LocationPicker'
 import LoadingSpinner from '../components/common/LoadingSpinner'
@@ -31,9 +32,9 @@ function JoinRoomFormPage() {
   }
 
   return (
-    <div className="relative flex min-h-screen flex-col justify-center gap-6 bg-main-navy p-6">
+    <div className="relative flex min-h-screen flex-col justify-center gap-6 bg-background p-6">
       <BackButton />
-      <h1 className="text-center text-xl font-bold text-white">닉네임을 입력해주세요</h1>
+      <h1 className="text-center text-title font-extrabold text-app-text">닉네임을 입력해주세요</h1>
       {error && <ErrorMessage message="참가에 실패했습니다. 닉네임을 확인해주세요." />}
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
         <LocationPicker value={location} onChange={setLocation} />
@@ -43,15 +44,11 @@ function JoinRoomFormPage() {
           onChange={(e) => setNickname(e.target.value)}
           placeholder="닉네임"
           required
-          className="min-h-11 w-full rounded-lg border border-main-navy bg-white px-4 text-app-text"
+          className="min-h-12 w-full rounded-tile border border-edge bg-surface px-4 text-[15px] text-app-text shadow-surface placeholder:text-ink-faint focus:border-point-orange focus:outline-none"
         />
-        <button
-          type="submit"
-          disabled={!nickname.trim() || !location}
-          className="min-h-11 w-full rounded-lg bg-point-orange font-semibold text-white disabled:opacity-60"
-        >
+        <Button type="submit" variant="primary" size="lg" fullWidth disabled={!nickname.trim() || !location}>
           입장하기
-        </button>
+        </Button>
       </form>
     </div>
   )

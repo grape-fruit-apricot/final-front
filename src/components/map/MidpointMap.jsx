@@ -2,7 +2,8 @@ import { useRef } from 'react'
 import { useKakaoMapsLoader } from '../../hooks/useKakaoMapsLoader'
 
 // 중간지점 좌표 하나를 지도에 마커+라벨로만 찍어서 보여주는 표시용 컴포넌트
-function MidpointMap({ name, lat, lng, height = 240 }) {
+// 지도가 이 화면의 주인공이라 기본 높이를 크게 잡는다(예전 240px 은 답답했다).
+function MidpointMap({ name, lat, lng, height = 380 }) {
   const containerRef = useRef(null)
   const mapRef = useRef(null)
   const markerRef = useRef(null)
@@ -42,11 +43,17 @@ function MidpointMap({ name, lat, lng, height = 240 }) {
     { enabled: lat != null && lng != null }
   )
 
-  return <div ref={containerRef} className="w-full rounded-lg" style={{ height }} />
+  return (
+    <div
+      ref={containerRef}
+      className="w-full overflow-hidden rounded-card border border-edge shadow-surface"
+      style={{ height }}
+    />
+  )
 }
 
 function toLabelContent(name) {
-  return `<div style="background:var(--color-main-navy);color:#fff;padding:2px 8px;border-radius:4px;font-size:12px;font-weight:600;white-space:nowrap;">${name}</div>`
+  return `<div style="background:var(--color-app-text);color:#fff;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap;">${name}</div>`
 }
 
 export default MidpointMap

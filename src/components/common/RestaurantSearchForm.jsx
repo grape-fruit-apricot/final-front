@@ -1,5 +1,7 @@
 import { useRef, useState } from 'react'
 import { useKakaoMapsLoader } from '../../hooks/useKakaoMapsLoader'
+import Button from './Button'
+import Card from './Card'
 import ErrorMessage from './ErrorMessage'
 
 // 중간지점 주변에서 식당을 검색해 방 목록에 추가하는 폼.
@@ -67,7 +69,12 @@ function RestaurantSearchForm({ lat, lng, onAdd, isAdding }) {
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex gap-2">
+      {/* 검색창은 테두리 상자가 아니라 하나의 알약이다. 지도 위에 떠 있어도 어울린다. */}
+      <div className="flex items-center gap-1.5 rounded-full border border-edge bg-surface p-1.5 pl-3 shadow-surface">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="h-[18px] w-[18px] flex-none text-accent-ink" aria-hidden="true">
+          <circle cx="11" cy="11" r="7" />
+          <path d="M20 20l-3.5-3.5" />
+        </svg>
         <input
           type="text"
           value={keyword}
@@ -79,16 +86,11 @@ function RestaurantSearchForm({ lat, lng, onAdd, isAdding }) {
             }
           }}
           placeholder="식당 이름 검색"
-          className="min-h-11 flex-1 rounded-lg border border-main-navy bg-white px-4 text-app-text"
+          className="min-h-11 min-w-0 flex-1 bg-transparent px-2 text-[15px] text-app-text placeholder:text-ink-faint focus:outline-none"
         />
-        <button
-          type="button"
-          onClick={handleSearch}
-          disabled={isSearching}
-          className="min-h-11 rounded-lg bg-point-orange px-4 font-semibold text-white disabled:opacity-60"
-        >
+        <Button variant="primary" size="sm" className="flex-none" onClick={handleSearch} disabled={isSearching}>
           검색
-        </button>
+        </Button>
       </div>
 
       {searchError && <ErrorMessage message={searchError} />}
@@ -96,23 +98,27 @@ function RestaurantSearchForm({ lat, lng, onAdd, isAdding }) {
       {places.length > 0 && (
         <ul className="flex flex-col gap-2">
           {places.map((place) => (
-            <li
+            <Card
+              as="li"
               key={place.id}
-              className="flex items-center gap-2 rounded-lg bg-white px-4 py-3 text-app-text"
+              className="flex items-center gap-3 px-3.5 py-2.5"
             >
               <div className="min-w-0 flex-1">
-                <p className="truncate font-semibold">{place.place_name}</p>
-                <p className="truncate text-xs text-app-text/60">{place.category_name}</p>
+                <p className="truncate text-[15px] font-bold tracking-tight text-app-text">
+                  {place.place_name}
+                </p>
+                <p className="mt-0.5 truncate text-[13px] text-ink-soft">{place.category_name}</p>
               </div>
-              <button
-                type="button"
+              <Button
+                variant="secondary"
+                size="sm"
+                className="shrink-0"
                 onClick={() => handleAdd(place)}
                 disabled={isAdding}
-                className="min-h-11 shrink-0 rounded-lg bg-main-navy px-4 text-sm font-semibold text-white disabled:opacity-60"
               >
                 추가
-              </button>
-            </li>
+              </Button>
+            </Card>
           ))}
         </ul>
       )}

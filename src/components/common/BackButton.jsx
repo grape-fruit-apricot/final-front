@@ -9,9 +9,9 @@ function BackButton() {
       type="button"
       onClick={() => navigate(-1)}
       aria-label="뒤로가기"
-      className="absolute left-4 top-4 flex h-11 w-11 items-center justify-center text-white"
+      className="absolute left-4 top-4 flex size-11 items-center justify-center rounded-full border border-white/70 bg-glass-strong text-app-text shadow-surface backdrop-blur-2xl transition-transform duration-150 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-point-orange"
     >
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
         <path d="M15 18l-6-6 6-6" />
       </svg>
     </button>

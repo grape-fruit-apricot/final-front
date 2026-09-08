@@ -1,9 +1,10 @@
-// 데이터 없음(빈) 상태 공통 컴포넌트
+// 데이터 없음(빈) 상태 공통 컴포넌트.
+// 목록 안에 들어가는 자리라 목록 한 칸 정도만 차지한다.
 function EmptyState({ message }) {
   return (
-    <div className="flex min-h-40 w-full items-center justify-center px-4 text-center text-sm text-gray-400">
+    <p className="rounded-card border border-dashed border-hairline px-4 py-8 text-center text-sm text-ink-faint">
       {message}
-    </div>
+    </p>
   )
 }
 

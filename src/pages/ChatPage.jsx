@@ -73,8 +73,9 @@ function ChatPage() {
   }
 
   return (
-    <div className="flex h-[calc(100dvh-5rem)] flex-col bg-background px-4 pt-4">
-      <h1 className="text-lg font-semibold text-app-text">채팅</h1>
+    // 떠 있는 탭바(64px + 아래 여백 + safe-area)만큼 빼야 입력줄이 탭바에 가리지 않는다.
+    <div className="flex h-[calc(100dvh-5.75rem-env(safe-area-inset-bottom))] flex-col bg-background px-4 pt-12">
+      <h1 className="text-subhead font-extrabold text-app-text">채팅</h1>
       <MessageList messages={messages} myParticipantId={myParticipantId} />
       <MessageInput onSend={handleSend} />
     </div>
