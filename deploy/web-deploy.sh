@@ -11,8 +11,8 @@ ENV_NAME="${1:?첫 번째 인자로 main 또는 develop 이 필요합니다}"
 SHA="${2:-unknown}"
 
 case "$ENV_NAME" in
-  main)    PORT=8081 ;;
-  develop) PORT=8083 ;;
+  main)    PORT=80 ;;
+  develop) PORT=8081 ;;
   *) echo "알 수 없는 환경: $ENV_NAME" >&2; exit 1 ;;
 esac
 

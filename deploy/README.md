@@ -5,8 +5,8 @@ EC2 1대에 컨테이너 4개(web 2 + api 2)를 띄우고, 앞단은 ALB 가 Hos
 **`final-back/deploy/README.md` 가 원본**이다. 여기서는 프론트 쪽만 적는다.
 
 ```
-midpoint.my      → main-web     :8081   nginx + dist 마운트
-dev.midpoint.my  → develop-web  :8083
+midpoint.my      → main-web     :80     nginx + dist 마운트
+dev.midpoint.my  → develop-web  :8081
 ```
 
 커스텀 이미지를 만들지 않는다. stock `nginx` 이미지에 `dist/` 와 `nginx.conf` 를
@@ -21,10 +21,14 @@ Vite 는 `VITE_*` 를 **빌드 시점에 번들에 인라인**한다. 런타임 
 그래서 develop 용 dist 와 main 용 dist 는 서로 다른 파일이고,
 **각 브랜치의 push 가 자기 환경 값으로 빌드해 자기 디렉터리에만 넣는다.**
 
-| 키 | develop | production |
-|---|---|---|
-| `VITE_API_BASE_URL` (Variable) | `https://dev-api.midpoint.my` | `https://api.midpoint.my` |
-| `VITE_KAKAO_JS_KEY` (Secret) | 카카오 JS 키 | 카카오 JS 키 |
+| 키 | 어디에 있나 | develop | main |
+|---|---|---|---|
+| `VITE_API_BASE_URL` | **워크플로 파일** | `https://dev-api.midpoint.my` | `https://api.midpoint.my` |
+| `VITE_KAKAO_JS_KEY` | Repository **Secret** | 카카오 JS 키 (공통) | 같음 |
+
+`VITE_API_BASE_URL` 은 GitHub 에 넣지 않는다. 브랜치 이름만 알면 정해지는 값이라
+`frontend-deploy.yml` 의 job `env` 블록에서 계산한다. 주소를 바꿀 일이 생기면
+Settings 가 아니라 **그 파일을 고치고 PR 을 올린다** — 변경 이력이 남아서 이 편이 낫다.
 
 `VITE_API_BASE_URL` 은 **끝에 `/` 를 붙이지 않는다.** `useRoomSocket` 이
 `${BASE}/ws` 로 이어붙여서 `//ws` 가 된다. 배포 워크플로가 이걸 먼저 막는다.
@@ -65,10 +69,12 @@ sudo -u deploy cp nginx.conf /opt/midpoint/develop/nginx.conf
 ```
 feature 브랜치 → PR → develop → (자동) develop-web 배포 → dev 환경에서 확인
                           ↓
-                        main → (승인 후) main-web 배포
+                        main → (즉시) main-web 배포
 ```
 
-`production` 환경에 Required reviewers 를 걸어두면 main 머지 후 배포가 대기 상태로 멈춘다.
+**main 머지 = 즉시 운영 배포다.** 승인 게이트를 두지 않는다.
+GitHub Environment 를 쓰지 않으므로 Required reviewers 도 없다.
+`develop -> main` 은 팀장만 올리고 머지하는 것으로 통제한다.
 
 `web-deploy.sh` 가 하는 일:
 
@@ -109,10 +115,10 @@ location ^~ /assets/ { try_files $uri =404; ... }
 
 ```bash
 # 서버에서
-curl -sI localhost:8081/                 # main-web    200
-curl -sI localhost:8083/                 # develop-web 200
-curl -sI localhost:8083/join/아무-uuid    # 200 (SPA fallback)
-curl -sI localhost:8083/assets/없는파일.js # 404 (index.html 이 내려오면 안 된다)
+curl -sI localhost:80/                   # main-web    200
+curl -sI localhost:8081/                 # develop-web 200
+curl -sI localhost:8081/join/아무-uuid    # 200 (SPA fallback)
+curl -sI localhost:8081/assets/없는파일.js # 404 (index.html 이 내려오면 안 된다)
 
 # ALB 를 통해서
 curl -sI https://dev.midpoint.my/join/아무-uuid
@@ -123,3 +129,26 @@ grep -o 'https://[a-z.-]*midpoint.my' /opt/midpoint/develop/dist/assets/*.js | s
 
 브라우저에서는 방 생성 → 초대 링크로 2번째 참가 → 중간지점 → 투표 → 게임 → 경로까지
 한 번 훑는다. **채팅이 실시간으로 오가는지가 ALB WebSocket 통과의 진짜 검증이다.**
+
+---
+
+## GitHub 에 넣는 값
+
+Settings → Secrets and variables → Actions. **Repository 단위**로 넣는다
+(Environment 를 쓰지 않는다 — 개인 계정 레포라 Environment 생성은 소유자만 가능하고,
+환경별로 다른 값은 브랜치에서 계산되는 것 둘뿐이라 상자를 나눌 실익이 없다).
+
+| 탭 | Name | Value |
+|---|---|---|
+| Variables | `DEPLOY_HOST` | EC2 탄력적 IP |
+| Variables | `DEPLOY_USER` | `ubuntu` (Amazon Linux 면 `ec2-user`) |
+| Variables | `SSH_KNOWN_HOSTS` | `ssh-keyscan -H <탄력적IP>` 출력 전체 |
+| Secrets | `SSH_PRIVATE_KEY` | `cat ~/.ssh/midpoint_ci` 전문 |
+| Secrets | `VITE_KAKAO_JS_KEY` | 카카오 JavaScript 키 |
+
+`DEPLOY_ENV` 는 넣지 않는다. 워크플로가 브랜치에서 계산한다
+(`main` 브랜치 -> `main`, 그 외 -> `develop`).
+
+**GitHub 에 절대 넣지 않는 것:** Oracle 접속정보, `kakao.rest-api-key`, `tmap.app-key`.
+이건 서버의 `/opt/midpoint/{main,develop}/config/application-local.yml` 에 손으로 넣는다.
+CI 가 DB 비밀번호를 들고 있으면 GitHub 이 털렸을 때 DB 까지 같이 털린다.

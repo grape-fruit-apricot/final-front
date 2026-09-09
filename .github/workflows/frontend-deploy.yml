@@ -20,7 +20,14 @@ jobs:
   deploy:
     name: 빌드 후 배포
     runs-on: ubuntu-latest
-    environment: ${{ github.ref_name == 'main' && 'production' || 'develop' }}
+    env:
+      # 서버 디렉터리명(/opt/midpoint/<여기>)이자 compose 서비스 접두어(<여기>-web).
+      DEPLOY_ENV: ${{ github.ref_name == 'main' && 'main' || 'develop' }}
+      # Vite 는 이 값을 빌드 시점에 번들에 인라인한다. 런타임 설정이 아니라서
+      # develop 용 dist 와 main 용 dist 가 서로 다른 파일이 된다.
+      # GitHub Environment 를 쓰지 않으므로 브랜치에서 계산한다.
+      # 끝에 / 를 붙이지 말 것. useRoomSocket 이 ${BASE}/ws 로 이어붙인다.
+      VITE_API_BASE_URL: ${{ github.ref_name == 'main' && 'https://api.midpoint.my' || 'https://dev-api.midpoint.my' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -39,19 +46,18 @@ jobs:
       # 둘 다 브라우저 콘솔에서만 보이는 증상이라 배포 전에 여기서 잡는다.
       - name: 환경변수 가드
         env:
-          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
           VITE_KAKAO_JS_KEY: ${{ secrets.VITE_KAKAO_JS_KEY }}
         run: |
           fail=0
           if [ -z "$VITE_API_BASE_URL" ]; then
-            echo "::error::VITE_API_BASE_URL 이 비어 있습니다 (Environment Variables 확인)"; fail=1
+            echo "::error::VITE_API_BASE_URL 이 비어 있습니다 (이 파일 위쪽 env 블록 확인)"; fail=1
           elif [ "${VITE_API_BASE_URL%/}" != "$VITE_API_BASE_URL" ]; then
             echo "::error::VITE_API_BASE_URL 끝의 / 를 빼세요. useRoomSocket 이 \${BASE}/ws 로 이어붙여 //ws 가 됩니다"; fail=1
           elif [ "${VITE_API_BASE_URL#https://}" = "$VITE_API_BASE_URL" ]; then
             echo "::error::VITE_API_BASE_URL 은 https:// 여야 합니다. 페이지가 https 라 http 호출은 혼합콘텐츠로 차단됩니다"; fail=1
           fi
           if [ -z "$VITE_KAKAO_JS_KEY" ]; then
-            echo "::error::VITE_KAKAO_JS_KEY 가 비어 있습니다 (Environment Secrets 확인)"; fail=1
+            echo "::error::VITE_KAKAO_JS_KEY 가 비어 있습니다 (Settings > Secrets and variables > Actions 확인)"; fail=1
           fi
           exit $fail
 
@@ -61,7 +67,6 @@ jobs:
 
       - name: 빌드
         env:
-          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
           VITE_KAKAO_JS_KEY: ${{ secrets.VITE_KAKAO_JS_KEY }}
         run: npm run build
 
@@ -79,8 +84,6 @@ jobs:
           chmod 600 ~/.ssh/known_hosts
 
       - name: 서버로 전송
-        env:
-          DEPLOY_ENV: ${{ vars.DEPLOY_ENV }}
         run: |
           scp -i ~/.ssh/deploy_key -o IdentitiesOnly=yes \
             dist.tar.gz deploy/web-deploy.sh \
@@ -90,4 +93,4 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes \
             "${{ vars.DEPLOY_USER }}@${{ vars.DEPLOY_HOST }}" \
-            "bash /opt/midpoint/${{ vars.DEPLOY_ENV }}/incoming/web-deploy.sh ${{ vars.DEPLOY_ENV }} ${{ github.sha }}"
+            "bash /opt/midpoint/${DEPLOY_ENV}/incoming/web-deploy.sh ${DEPLOY_ENV} ${{ github.sha }}"
