@@ -47,7 +47,7 @@ export function fetchModeVoteStatus(roomUuid) {
   return api.get(`/api/rooms/${roomUuid}/votes`)
 }
 
-// 게임 시작 전 준비 완료 표시
+// 게임 시작 전 준비 상태 토글. 서버가 현재 값을 뒤집으므로 보낼 값이 없다.
 export function updateReady(roomUuid, participantId) {
   return api.patch(`/api/rooms/${roomUuid}/participants/${participantId}/ready`)
 }

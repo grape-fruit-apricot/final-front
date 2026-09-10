@@ -1,4 +1,5 @@
 import Avatar from './Avatar'
+import ParticipantBadge from './ParticipantBadge'
 
 // 참가자 1명(아바타 + 닉네임 + 방장·나 표시)을 그리는 표시용 컴포넌트.
 // myParticipantId 는 없을 수도 있다(입장하지 않고 방을 연 경우). 그때는 나 표시만 빠진다.
@@ -19,16 +20,8 @@ function ParticipantItem({ participant, myParticipantId, detail = null }) {
         {detail && <p className="mt-0.5 truncate text-xs text-ink-soft">{detail}</p>}
       </div>
 
-      {isMe && (
-        <span className="flex-none rounded-full bg-accent-tint px-2.5 py-1 text-xs font-bold text-accent-ink">
-          나
-        </span>
-      )}
-      {participant.isHost === 'Y' && (
-        <span className="flex-none rounded-full bg-fill px-2.5 py-1 text-xs font-bold text-ink-soft">
-          방장
-        </span>
-      )}
+      {isMe && <ParticipantBadge tone="me">나</ParticipantBadge>}
+      {participant.isHost === 'Y' && <ParticipantBadge tone="host">방장</ParticipantBadge>}
     </div>
   )
 }

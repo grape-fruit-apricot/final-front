@@ -72,6 +72,14 @@ function RoomLayout() {
     'participants/ready': (list) => {
       setParticipants(list)
     },
+  }, () => {
+    // 끊겼다 다시 붙는 동안 나간 브로드캐스트는 다시 오지 않는다. 그 사이에 누가 준비를 눌렀다면
+    // 이 화면의 준비 인원이 0 인 채로 굳고, 방장은 시작 버튼이 잠긴 이유를 알 수 없다.
+    // 그래서 커넥션에 붙을 때마다 목록을 다시 읽어 따라잡는다.
+    // 실패해도 화면을 무너뜨리지 않는다. 다음 브로드캐스트나 재연결 때 다시 맞춰진다.
+    fetchParticipants(roomUuid)
+      .then(setParticipants)
+      .catch(() => {})
   })
 
   const handleLeaveRoom = async () => {
