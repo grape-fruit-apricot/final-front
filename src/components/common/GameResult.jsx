@@ -8,7 +8,7 @@ import ShareRestaurantButton from './ShareRestaurantButton'
 // 게임으로 정해졌으면 서버가 알려준 승자 한 명을 그대로 쓴다.
 // 무작위로 정해졌을 때만 "확정된 식당을 고른 참가자"로 계산한다
 // (그 경우 같은 식당을 고른 사람이 여럿일 수 있고, 그들 모두가 우승자다).
-function GameResult({ result, participants, selections, winnerParticipantId, onShowRoute }) {
+function GameResult({ result, participants, selections, winnerParticipantId, onShowRoute, onShowTracking }) {
   const { restaurant } = result
 
   const winners = winnerParticipantId
@@ -76,6 +76,12 @@ function GameResult({ result, participants, selections, winnerParticipantId, onS
       {/* 주 동작 하나 + 텍스트 보조. 채움 버튼 두 개를 위아래로 쌓지 않는다. */}
       <Button variant="primary" size="lg" fullWidth className="mt-6" onClick={onShowRoute}>
         경로 보기
+      </Button>
+
+      {/* 이동 추적은 약속 장소가 정해진 다음에 보는 것이라 경로 보기와 같은 무게가 아니다.
+          채움을 낮춘 secondary 로 둬서 주 동작이 하나로 남게 한다. */}
+      <Button variant="secondary" size="lg" fullWidth className="mt-2" onClick={onShowTracking}>
+        이동 추적
       </Button>
 
       <div className="mt-1 w-full">

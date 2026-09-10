@@ -39,3 +39,18 @@ export function createPinContent({ label, color = 'var(--color-point-orange)' } 
     </div>
   `
 }
+
+// 이동 추적은 참가자 여럿의 궤적을 한 지도에 겹쳐 그린다. 전원이 같은 색이면 선이 섞였을 때
+// 어느 것이 누구인지 알 수 없으므로 사람 수만큼 색을 돌려 쓴다.
+//
+// 첫 색은 --color-route 와 같다. 그쪽도 "이동한 선"이라는 같은 뜻이고, 경로 안내 화면과
+// 추적 화면은 한 번에 하나만 보이므로 뜻이 부딪히지 않는다.
+// 목적지 핀은 앱 강조색(point-orange)이 맡으므로 여기에 주황 계열은 넣지 않는다.
+// 색상만으로 구분하지 않도록 참가자 이름을 핀 라벨로 함께 표시한다(TrackingMap).
+const TRACKING_TRAIL_COLORS = ['#1d6fe0', '#0f8a6a', '#7c3aed', '#8a6a0f']
+
+// 참가자가 팔레트보다 많으면 색이 다시 돌아온다. 방 인원 상한이 없어서 막을 수 없고,
+// 그때도 이름 라벨로는 구분되므로 색이 겹치는 것을 허용한다.
+export function trackingColorAt(index) {
+  return TRACKING_TRAIL_COLORS[index % TRACKING_TRAIL_COLORS.length]
+}
