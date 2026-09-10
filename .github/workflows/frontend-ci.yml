@@ -1,0 +1,67 @@
+name: 프론트 CI
+
+on:
+  pull_request:
+    branches: [develop, main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: frontend-ci-${{ github.head_ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: 빌드 검증
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # 실제 키가 들어가는 .env 가 추적 대상이 되면 즉시 막는다.
+      # 레포가 public 이라 한 번 올라가면 되돌릴 수 없다.
+      # (.env.example 은 키 이름만 있으므로 검사 대상이 아니다)
+      - name: .env 추적 여부 검사
+        run: |
+          if git ls-files --error-unmatch .env >/dev/null 2>&1; then
+            echo "::error file=.env::.env 가 커밋되었습니다. git rm --cached .env 로 되돌리세요."
+            exit 1
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - run: npm ci
+
+      # oxlint 는 warning 에서 exit 0 이다. 지금은 게이트가 아니라 기록용이다.
+      # 진짜 게이트로 쓰려면 --deny-warnings 를 붙여야 하는데,
+      # 그러면 기존 AppErrorBoundary.jsx:13 warning 이 즉시 빨간불이 된다.
+      - name: lint
+        run: npm run lint
+
+      - name: 유닛 테스트
+        run: node --test src/utils/joinRoomError.test.js
+
+      # 빌드는 값의 내용을 검사하지 않는다. 여기서는 "컴파일이 되는가"만 본다.
+      # 실제 값 검증은 배포 워크플로의 환경변수 가드가 맡는다.
+      - name: 빌드
+        env:
+          VITE_API_BASE_URL: https://ci.invalid
+          VITE_KAKAO_JS_KEY: ci-dummy-key
+        run: npm run build
+
+      - name: 산출물 검증
+        run: |
+          test -f dist/index.html || { echo "::error::dist/index.html 이 없습니다"; exit 1; }
+          test -d dist/assets     || { echo "::error::dist/assets 가 없습니다"; exit 1; }
+
+          # 더미 값이 번들에 인라인되었는지 본다.
+          # 이게 안 잡히면 vite 가 환경변수를 읽지 않은 것이고,
+          # 배포 때도 조용히 빈 값으로 빌드되어 앱만 망가진다.
+          grep -rq 'https://ci.invalid' dist/assets \
+            || { echo "::error::VITE_API_BASE_URL 이 번들에 인라인되지 않았습니다"; exit 1; }
+
+          echo "산출물 검증 통과"
