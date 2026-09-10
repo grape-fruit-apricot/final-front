@@ -61,6 +61,8 @@ CLAUDE.md
 TASK.md
 .claude/*
 image.png
+# PR 본문 초안 등 작업 중 만든 문서를 두는 곳. 백엔드 레포와 같은 이름을 쓴다.
+Claude outputs/
 
 # ===== 커밋해야 하는 파일 =====
 # 위 .env.* 규칙을 되돌린다. 반드시 그 규칙보다 아래에 있어야 한다.
