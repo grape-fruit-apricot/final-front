@@ -1,9 +1,13 @@
 import ListGroup from './ListGroup'
 import EmptyState from './EmptyState'
+import ParticipantBadge from './ParticipantBadge'
 
 // 참가자별로 어떤 식당을 골랐는지 보여주는 목록.
 // 준비를 마친 참가자는 강조색으로 구분한다.
-function ParticipantSelectionList({ participants, selections, restaurants }) {
+//
+// 나·방장 배지를 함께 그린다. 시작 버튼은 방장에게만 보이므로, 배지가 없으면
+// "왜 나한테는 시작 버튼이 없지"의 답을 이 화면에서 알 수 없다.
+function ParticipantSelectionList({ participants, selections, restaurants, myParticipantId }) {
   if (participants.length === 0) {
     return <EmptyState message="참가자가 없습니다." />
   }
@@ -26,6 +30,7 @@ function ParticipantSelectionList({ participants, selections, restaurants }) {
       {participants.map((participant) => {
         const restaurantName = findRestaurantName(participant.participantId)
         const isReady = participant.isReady === 'Y'
+        const isMe = String(participant.participantId) === String(myParticipantId)
 
         return (
           <div
@@ -41,6 +46,8 @@ function ParticipantSelectionList({ participants, selections, restaurants }) {
               <span className="truncate text-[17px] font-bold tracking-tight text-app-text">
                 {participant.nickname}
               </span>
+              {isMe && <ParticipantBadge tone="me">나</ParticipantBadge>}
+              {participant.isHost === 'Y' && <ParticipantBadge tone="host">방장</ParticipantBadge>}
             </span>
             <span
               className={`truncate text-[15px] ${restaurantName ? 'font-bold text-app-text' : 'text-ink-faint'}`}

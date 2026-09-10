@@ -578,6 +578,7 @@ function MainPage() {
                   participants={participants}
                   selections={selections}
                   restaurants={restaurants}
+                  myParticipantId={myParticipantId}
                 />
                 {readyError && <ErrorMessage message={readyError} />}
 
