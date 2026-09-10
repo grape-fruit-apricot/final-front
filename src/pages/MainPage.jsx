@@ -604,16 +604,29 @@ function MainPage() {
                     )}
                   </>
                 ) : (
-                  <Button
-                    variant="primary"
-                    size="lg"
-                    fullWidth
-                    className="mt-4"
-                    onClick={handleReady}
-                    disabled={isReady || isReadying}
-                  >
-                    {isReady ? "준비중" : "준비하기"}
-                  </Button>
+                  <>
+                    {/* 준비는 되돌릴 수 있다. 준비를 마치면 방장의 시작을 기다리는 일만
+                        남으므로, 이 버튼은 더 이상 화면에서 제일 중요한 동작이 아니다. */}
+                    <Button
+                      variant={isReady ? "secondary" : "primary"}
+                      size="lg"
+                      fullWidth
+                      className="mt-4"
+                      onClick={handleReady}
+                      disabled={isReadying}
+                    >
+                      {isReadying
+                        ? "바꾸는 중..."
+                        : isReady
+                          ? "준비 취소"
+                          : "준비하기"}
+                    </Button>
+                    {isReady && (
+                      <p className="mt-2 text-center text-xs text-ink-soft">
+                        준비를 마쳤어요. 방장이 시작하기를 누르면 진행돼요.
+                      </p>
+                    )}
+                  </>
                 )}
 
                 {/* 서버가 선택을 덮어쓰므로 몇 번이든 바꿀 수 있다.
