@@ -443,6 +443,14 @@ function MainPage() {
     (participant) => participant.isHost === "Y" || participant.isReady === "Y",
   ).length;
 
+  // 방장에게는 준비 버튼 대신 시작 버튼이 있으므로 이 수에 방장은 들어가지 않는다.
+  // 아무도 준비하지 않았는데 시작하면 방장 혼자 진행 방식을 정하게 되므로 최소 1명을 요구한다.
+  // 서버도 startModeVote 에서 같은 기준을 다시 확인한다. 여기서 막는 것은 안내를 위해서다.
+  const readyCount = participants.filter(
+    (participant) => participant.isReady === "Y",
+  ).length;
+  const canStart = readyCount >= 1;
+
   if (isLoading) {
     return <LoadingSpinner />;
   }
@@ -576,16 +584,25 @@ function MainPage() {
                 {startError && <ErrorMessage message={startError} />}
 
                 {isHost ? (
-                  <Button
-                    variant="primary"
-                    size="lg"
-                    fullWidth
-                    onClick={handleStart}
-                    disabled={isStarting || isResetting}
-                    className="mt-4 min-h-11 w-full rounded-lg bg-point-orange font-semibold text-white disabled:bg-white/30 disabled:text-white/60"
-                  >
-                    {isStarting ? "결과 뽑는 중..." : "시작하기"}
-                  </Button>
+                  <>
+                    <Button
+                      variant="primary"
+                      size="lg"
+                      fullWidth
+                      onClick={handleStart}
+                      disabled={!canStart || isStarting || isResetting}
+                      className="mt-4 min-h-11 w-full rounded-lg bg-point-orange font-semibold text-white disabled:bg-white/30 disabled:text-white/60"
+                    >
+                      {isStarting ? "결과 뽑는 중..." : "시작하기"}
+                    </Button>
+                    {/* 버튼이 왜 눌리지 않는지 적어둔다. 이유 없이 비활성화된 버튼은
+                        기다려야 하는지 고장인지 알 수 없다. */}
+                    {!canStart && (
+                      <p className="mt-2 text-center text-xs text-ink-soft">
+                        준비를 마친 참가자가 1명 이상이어야 시작할 수 있어요.
+                      </p>
+                    )}
+                  </>
                 ) : (
                   <Button
                     variant="primary"
