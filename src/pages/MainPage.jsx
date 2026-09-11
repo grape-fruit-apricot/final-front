@@ -10,6 +10,7 @@ import useFetchRouteResult from '../hooks/useFetchRouteResult'
 import { DEFAULT_TRAVEL_MODE } from '../api/room'
 import useFetchModeVote from '../hooks/useFetchModeVote'
 import useFetchGameStatus from '../hooks/useFetchGameStatus'
+import useFetchTracking from '../hooks/useFetchTracking'
 import useRoomSocket from '../hooks/useRoomSocket'
 import Button from '../components/common/Button'
 import PageHeader from '../components/layout/PageHeader'
@@ -23,6 +24,7 @@ import ParticipantSelectionList from '../components/common/ParticipantSelectionL
 import RoomCodeCard from '../components/common/RoomCodeCard'
 import GameResult from '../components/common/GameResult'
 import RouteDetail from '../components/common/RouteDetail'
+import TrackingPanel from '../components/common/TrackingPanel'
 import ModeVote from '../components/common/ModeVote'
 import GameLobby from '../components/common/GameLobby'
 import FloatingConfirmBar from '../components/common/FloatingConfirmBar'
@@ -45,6 +47,7 @@ function MainPage() {
   const { fetch: fetchRouteResult } = useFetchRouteResult();
   const { fetch: fetchModeVote } = useFetchModeVote();
   const { fetch: fetchGameStatus } = useFetchGameStatus();
+  const { fetch: fetchTracking } = useFetchTracking();
 
   const [midpoint, setMidpoint] = useState(null);
   const [restaurants, setRestaurants] = useState([]);
@@ -68,8 +71,14 @@ function MainPage() {
   const [game, setGame] = useState(null);
   const [isPicking, setIsPicking] = useState(false);
   const [gameError, setGameError] = useState(null);
-  // 결과 발표와 경로 안내를 한 탭 안에서 번갈아 보여준다(주소는 그대로 두고 화면만 바꾼다).
-  const [isRouteOpen, setIsRouteOpen] = useState(false)
+  // 결과 발표 · 경로 안내 · 이동 추적을 한 탭 안에서 번갈아 보여준다(주소는 그대로 두고 화면만 바꾼다).
+  // 불리언을 화면마다 하나씩 두면 둘 다 true 인 상태를 만들 수 있어, 어느 화면인지 한 값으로 정한다.
+  const [resultView, setResultView] = useState('result')
+  // 이동 추적 현황. 시작 전에는 null, 시작하면 서버가 보낸 현황 전체를 그대로 담는다.
+  // 소켓 방송과 REST 조회가 같은 모양이라 어디서 왔는지 구분하지 않는다.
+  const [tracking, setTracking] = useState(null)
+  const [isTrackingStarting, setIsTrackingStarting] = useState(false)
+  const [trackingError, setTrackingError] = useState(null)
   // 화면에 그려지고 있는 경로의 이동수단. result 와 짝이라 여기서 함께 들고 있어야 한다.
   // RouteDetail 안에 두면 이동수단이 먼저 바뀌고 result 가 나중에 도착해서,
   // 그 사이 한 프레임 동안 "경로를 찾지 못했습니다"가 뜨고 지도가 통째로 다시 만들어진다.
@@ -106,13 +115,25 @@ function MainPage() {
         // 이미 결과가 확정된 방이면 새로고침해도 결과 화면이 유지되도록 복원한다.
         // 결과 조회까지 기다렸다가 로딩을 끝내야, 중간지점 화면이 한 프레임 떴다 사라지지 않는다.
         if (room.stage === "RESOLVED") {
-          return fetchRouteResult(roomUuid)
-            .then((routeResult) => {
-              if (!isCancelled) setResult(routeResult);
-            })
-            .catch(() => {
-              if (!isCancelled) setResult(null);
-            });
+          // 이동 추적도 같이 복원한다. 추적 중에 새로고침하면 그동안 지나간 방송은 다시 오지 않아
+          // 궤적과 도착 상태가 통째로 빈 채로 남는다.
+          // 아직 시작하지 않은 방도 200 이고 participants 가 빈 배열로 오므로 따로 구분하지 않는다.
+          return Promise.all([
+            fetchRouteResult(roomUuid)
+              .then((routeResult) => {
+                if (!isCancelled) setResult(routeResult);
+              })
+              .catch(() => {
+                if (!isCancelled) setResult(null);
+              }),
+            fetchTracking(roomUuid)
+              .then((trackingStatus) => {
+                if (!isCancelled) setTracking(trackingStatus);
+              })
+              .catch(() => {
+                if (!isCancelled) setTracking(null);
+              }),
+          ]);
         }
         // 게임이 도는 중이면 주머니 상태와 남은 시간까지 복원해야 한다.
         if (room.stage === "GAME_PLAYING") {
@@ -252,6 +273,25 @@ function MainPage() {
       setStartError(payload?.message ?? "결과를 확정하지 못했습니다.");
       setIsStarting(false);
     },
+    // 디바이스가 좌표를 보낼 때마다 방 전체의 이동 현황이 통째로 온다(부분 갱신이 아니다).
+    // 방장이 시작했을 때도 같은 토픽으로 첫 현황이 온다.
+    tracking: (status) => {
+      setTracking(status);
+      setIsTrackingStarting(false);
+      setTrackingError(null);
+    },
+    "tracking/error": (payload) => {
+      setTrackingError(payload?.message ?? "이동 추적을 시작하지 못했습니다.");
+      setIsTrackingStarting(false);
+    },
+  }, () => {
+    // 끊겼다 다시 붙는 동안 나간 방송은 다시 오지 않는다. 그 사이에 전원이 도착했다면
+    // 더 보낼 좌표가 없어 방송도 끊기고, 이 화면은 이동 중인 상태로 굳는다.
+    // 그래서 커넥션에 붙을 때마다 현황을 다시 읽어 따라잡는다.
+    // 아직 시작하지 않은 방은 따라잡을 것이 없어 부르지 않는다.
+    // 실패해도 화면을 무너뜨리지 않는다. 다음 방송이나 재연결 때 다시 맞춰진다.
+    if (!tracking) return;
+    fetchTracking(roomUuid).then(setTracking).catch(() => {});
   });
 
   // 방장 여부는 서버가 소켓 세션의 participantId로 다시 확인하므로, 여기서는 버튼 노출만 판단한다.
@@ -413,6 +453,18 @@ function MainPage() {
     }
   };
 
+  // 이동 추적 시작. 방장 여부는 서버가 소켓 세션의 participantId 로 다시 확인한다.
+  // 이미 시작된 방에서 다시 눌러도 서버가 세션을 새로 만들지 않고 현재 상태만 방송한다.
+  const handleStartTracking = () => {
+    setTrackingError(null);
+    setIsTrackingStarting(true);
+
+    if (!publish("/app/tracking/start")) {
+      setIsTrackingStarting(false);
+      setTrackingError("연결이 끊겼습니다. 잠시 후 다시 시도해주세요.");
+    }
+  };
+
   const me = participants.find(
     (participant) =>
       String(participant.participantId) === String(myParticipantId),
@@ -474,14 +526,24 @@ function MainPage() {
       >
         {result ? (
           <div>
-            {isRouteOpen ? (
+            {resultView === 'route' ? (
               <RouteDetail
                 result={result}
                 participants={participants}
                 myParticipantId={myParticipantId}
                 travelMode={travelMode}
-                onBack={() => setIsRouteOpen(false)}
+                onBack={() => setResultView('result')}
                 onTravelModeChange={handleTravelModeChange}
+              />
+            ) : resultView === 'tracking' ? (
+              <TrackingPanel
+                tracking={tracking}
+                myParticipantId={myParticipantId}
+                isHost={isHost}
+                isStarting={isTrackingStarting}
+                errorMessage={trackingError}
+                onStart={handleStartTracking}
+                onBack={() => setResultView('result')}
               />
             ) : (
               <GameResult
@@ -489,7 +551,8 @@ function MainPage() {
                 participants={participants}
                 selections={selections}
                 winnerParticipantId={game?.winnerParticipantId}
-                onShowRoute={() => setIsRouteOpen(true)}
+                onShowRoute={() => setResultView('route')}
+                onShowTracking={() => setResultView('tracking')}
               />
             )}
           </div>

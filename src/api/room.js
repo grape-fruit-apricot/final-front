@@ -79,3 +79,10 @@ export function fetchGameStatus(roomUuid) {
 export function deleteParticipant(roomUuid, participantId) {
   return api.delete(`/api/rooms/${roomUuid}/participants/${participantId}`)
 }
+
+// 이동 추적 현황 조회. 갱신은 소켓(/topic/room/{uuid}/tracking)으로 받지만, 새로고침하거나
+// 뒤늦게 들어온 사람은 지나간 방송을 받을 수 없어 지금 상태를 한 번 읽어야 한다.
+// 아직 시작하지 않은 방도 200 이고 participants 가 빈 배열로 온다(404 가 아니다).
+export function fetchTracking(roomUuid) {
+  return api.get(`/api/rooms/${roomUuid}/tracking`)
+}

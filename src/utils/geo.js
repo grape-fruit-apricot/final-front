@@ -31,3 +31,14 @@ export function formatDistance(meters) {
   if (meters < 1000) return `${Math.round(meters / 100) * 100}m`
   return `${(meters / 1000).toFixed(1)}km`
 }
+
+// 이동 추적 화면용. 위 formatDistance 는 100m 단위로 끊는데, 도착 판정이 50m 인 추적에서는
+// 남은 거리가 "100m" 다음에 곧바로 "0m" 이 된다(Math.round(48 / 100) * 100 === 0).
+// 목적지에 다가가는 마지막 구간이 화면에서 통째로 사라지므로 그 구간만 10m 단위로 읽는다.
+// 위쪽 함수를 바꾸지 않는 이유는 그 값이 "얼마나 멀리서 오는지" 감을 주는 자리(경로·식당 목록)에
+// 쓰이고 있어서다. 거기서는 10m 단위가 오히려 과하게 정밀하다.
+export function formatApproachDistance(meters) {
+  if (meters == null) return null
+  if (meters < 1000) return `${Math.round(meters / 10) * 10}m`
+  return `${(meters / 1000).toFixed(1)}km`
+}
