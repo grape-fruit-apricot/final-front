@@ -1,3 +1,4 @@
+import MapStatus from './MapStatus'
 import { useRef } from 'react'
 import { useKakaoMapsLoader } from '../../hooks/useKakaoMapsLoader'
 import { useKakaoMapResize } from '../../hooks/useKakaoMapResize'
@@ -12,7 +13,7 @@ function MidpointMap({ name, lat, lng, height = 380 }) {
 
   useKakaoMapResize(containerRef, mapRef)
 
-  useKakaoMapsLoader(
+  const { isLoading, error } = useKakaoMapsLoader(
     () => {
       const center = new window.kakao.maps.LatLng(lat, lng)
 
@@ -44,11 +45,14 @@ function MidpointMap({ name, lat, lng, height = 380 }) {
   )
 
   return (
+    <>
+      <MapStatus isLoading={isLoading} error={error} />
     <div
       ref={containerRef}
       className="w-full overflow-hidden rounded-card border border-edge shadow-surface"
       style={{ height }}
     />
+    </>
   )
 }
 

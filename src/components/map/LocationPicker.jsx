@@ -1,3 +1,4 @@
+import MapStatus from './MapStatus'
 import { useEffect, useRef, useState } from 'react'
 import { useKakaoMapsLoader } from '../../hooks/useKakaoMapsLoader'
 import { useKakaoMapResize } from '../../hooks/useKakaoMapResize'
@@ -5,7 +6,6 @@ import { createPinContent } from '../../utils/mapMarker'
 import Button from '../common/Button'
 import ErrorMessage from '../common/ErrorMessage'
 
-const KAKAO_JS_KEY = import.meta.env.VITE_KAKAO_JS_KEY
 // 지도가 처음 뜰 때 보여줄 중심좌표(실제 위치는 지도를 클릭하거나 검색해서 고른다)
 const DEFAULT_CENTER = { lat: 37.5696, lng: 126.9842 }
 
@@ -60,7 +60,7 @@ function LocationPicker({ value, onChange, height = 300, fill = false }) {
     }
   }, [])
 
-  useKakaoMapsLoader(() => {
+  const { isLoading, error } = useKakaoMapsLoader(() => {
     const map = new window.kakao.maps.Map(containerRef.current, {
       center: new window.kakao.maps.LatLng(DEFAULT_CENTER.lat, DEFAULT_CENTER.lng),
       level: 5,
@@ -79,7 +79,7 @@ function LocationPicker({ value, onChange, height = 300, fill = false }) {
 
   function handleSearch() {
     const keyword = query.trim()
-    if (!keyword || !geocoderRef.current) return
+    if (isLoading || error || !keyword || !geocoderRef.current || !placesRef.current) return
     setIsSearching(true)
     setSearchError(null)
 
@@ -111,6 +111,7 @@ function LocationPicker({ value, onChange, height = 300, fill = false }) {
         </svg>
         <input
           type="text"
+          disabled={isLoading || Boolean(error)}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => {
@@ -122,10 +123,11 @@ function LocationPicker({ value, onChange, height = 300, fill = false }) {
           placeholder="주소/장소 검색"
           className="min-h-11 min-w-0 flex-1 bg-transparent px-2 text-[15px] text-app-text placeholder:text-ink-faint focus:outline-none"
         />
-        <Button variant="primary" size="sm" className="flex-none" onClick={handleSearch} disabled={isSearching}>
+        <Button variant="primary" size="sm" className="flex-none" onClick={handleSearch} disabled={isLoading || Boolean(error) || isSearching}>
           검색
         </Button>
       </div>
+      <MapStatus isLoading={isLoading} error={error} />
       {searchError && <ErrorMessage message={searchError} />}
       <div
         ref={containerRef}
@@ -133,11 +135,7 @@ function LocationPicker({ value, onChange, height = 300, fill = false }) {
           fill ? 'min-h-0 flex-1' : ''
         }`}
         style={fill ? undefined : { height }}
-      >
-        {!KAKAO_JS_KEY && (
-          <p className="p-4 text-sm text-ink-soft">지도를 불러오려면 VITE_KAKAO_JS_KEY 설정이 필요합니다.</p>
-        )}
-      </div>
+      />
       {/* 좌표 숫자는 보여주지 않는다. 고른 위치는 지도 위 마커로 확인하면 되고,
           위도·경도는 사용자가 판단에 쓸 수 있는 정보가 아니다. */}
       {value && (
