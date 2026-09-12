@@ -1,3 +1,4 @@
+import MapStatus from './MapStatus'
 import { useEffect, useRef } from 'react'
 import { useKakaoMapsLoader } from '../../hooks/useKakaoMapsLoader'
 import { normalizeSegmentType, resolveRouteColors, SEGMENT_STYLES } from '../../utils/routeStyles'
@@ -27,7 +28,7 @@ function RouteMap({ segments, points, travelMode, start, end, startLabel = 'ì¶œë
     return () => clearOverlays(overlaysRef.current)
   }, [])
 
-  useKakaoMapsLoader(
+  const { isLoading, error } = useKakaoMapsLoader(
     () => {
       const center = new window.kakao.maps.LatLng(start.lat, start.lng)
 
@@ -79,13 +80,15 @@ function RouteMap({ segments, points, travelMode, start, end, startLabel = 'ì¶œë
   )
 
   return (
+    <>
+      <MapStatus isLoading={isLoading} error={error} />
     <div className="relative">
       <div
         ref={containerRef}
         className="w-full overflow-hidden rounded-card border border-edge shadow-surface"
         style={{ height }}
       />
-      {visibleTypes.length > 0 && (
+      {!isLoading && !error && visibleTypes.length > 0 && (
         <div className="absolute left-3 top-3 z-10 flex flex-wrap gap-2.5 rounded-full border border-white/70 bg-glass-strong px-3 py-1.5 text-xs font-bold text-app-text shadow-surface backdrop-blur-md">
           {visibleTypes.map((type) => (
             <div key={type} className="flex items-center gap-1">
@@ -108,6 +111,7 @@ function RouteMap({ segments, points, travelMode, start, end, startLabel = 'ì¶œë
         </div>
       )}
     </div>
+    </>
   )
 }
 
