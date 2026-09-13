@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import Button from '../components/common/Button'
+import AppLogo from '../components/common/AppLogo'
 
 // 처음 오는 사람에게 "무엇을 어떤 순서로 하는지" 세 걸음으로 보여준다.
 // 버튼만 둘 놓으면 화면이 비어 보이고, 무슨 서비스인지도 알기 어렵다.
@@ -153,23 +154,7 @@ function LandingPage() {
 
       {/* 로고와 제목이 남은 공간을 다 쓰고 가운데 놓인다. */}
       <div className="relative flex flex-1 flex-col items-center justify-center gap-6">
-        <svg viewBox="0 0 80 96" className="relative h-28 w-28" aria-hidden="true">
-          <path
-            d="M12 8h56a4 4 0 0 1 4 4v48l-32 28-32-28V12a4 4 0 0 1 4-4Z"
-            fill="var(--color-app-text)"
-          />
-          <path
-            d="M40 26c-7.2 0-13 5.8-13 13 0 9.7 13 25 13 25s13-15.3 13-25c0-7.2-5.8-13-13-13Z"
-            fill="var(--color-background)"
-          />
-          <circle cx="40" cy="39" r="5" fill="var(--color-app-text)" />
-          <circle cx="62" cy="18" r="11" fill="var(--color-point-orange)" />
-          <path
-            d="M62 12c-2.8 0-5 2.2-5 5 0 3.7 5 9 5 9s5-5.3 5-9c0-2.8-2.2-5-5-5Z"
-            fill="#fff"
-          />
-          <circle cx="62" cy="17" r="1.8" fill="var(--color-point-orange)" />
-        </svg>
+        <AppLogo className="relative h-28 w-28" />
 
         <div className="relative flex flex-col items-center gap-3">
           <h1 className="text-center text-display font-extrabold text-app-text">

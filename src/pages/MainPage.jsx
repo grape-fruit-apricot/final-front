@@ -13,6 +13,8 @@ import FloatingConfirmBar from '../components/common/FloatingConfirmBar'
 import TreasureBagGame from '../components/common/TreasureBagGame'
 import RestaurantSelection from '../components/common/RestaurantSelection'
 import ErrorRedirect from '../components/common/ErrorRedirect'
+import RoomProgress from '../components/common/RoomProgress'
+import AppLogo from '../components/common/AppLogo'
 
 function MainPage() {
   const { roomUuid, myParticipantId, participants } = useOutletContext()
@@ -36,7 +38,8 @@ function MainPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-header">
-      <PageHeader title="딱!" showBack={false} />
+      <PageHeader title={<AppLogo className="mx-auto block h-11 w-11" />} showBack={false} />
+      <RoomProgress step={result.data ? 3 : midpoint.data || game.modeVote || game.game ? 2 : 1} />
       <PageSheet
         className={hasConfirmBar
           ? 'pb-[calc(env(safe-area-inset-bottom)+11rem)]'

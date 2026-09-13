@@ -55,9 +55,9 @@ function ModeVote({ status, participants, myParticipantId, pickedMode, onPick, i
         </p>
       </div>
 
-      {/* 선택지가 둘뿐이라 나란히 두면 화면 위쪽에 작게 몰리고 아래가 통째로 빈다.
-          위아래로 쌓고 flex-1 로 남은 높이를 나눠 가져, 고르는 순간이 화면의 주인공이 되게 한다. */}
-      <div className="flex min-h-0 flex-1 flex-col gap-3">
+      {/* 참가자 수와 확정 버튼 표시가 바뀌어도 카드 높이는 유지한다.
+          공간이 부족하면 카드를 줄이지 않고 페이지를 스크롤한다. */}
+      <div className="grid shrink-0 auto-rows-fr grid-cols-1 gap-3">
         {MODES.map((mode) => {
           // 아직 아무것도 누르지 않았으면 이미 던진 표를 눌러둔 것으로 본다.
           // 그래야 바꾸러 들어왔을 때 무엇을 바꾸는지 보인다.
@@ -70,14 +70,14 @@ function ModeVote({ status, participants, myParticipantId, pickedMode, onPick, i
               onClick={() => onPick(mode.value)}
               disabled={isVoting}
               aria-pressed={isPicked}
-              className={`flex min-h-32 flex-1 flex-col items-center justify-center gap-3 rounded-card border px-4 py-6 transition-colors ${
+              className={`flex min-h-52 w-full flex-col items-center justify-center gap-3 rounded-card border px-4 py-6 transition-colors ${
                 isPicked
                   ? 'border-point-orange bg-accent-tint shadow-raised'
                   : 'border-edge bg-surface shadow-surface'
               }`}
             >
               <span
-                className={`flex h-16 w-16 items-center justify-center rounded-full ${
+                className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-full ${
                   isPicked ? 'bg-point-orange text-white' : 'bg-fill text-ink-soft'
                 }`}
               >

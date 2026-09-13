@@ -54,17 +54,17 @@ function RestaurantSelection({ participants, myParticipantId, midpoint: midpoint
                 fullWidth
                 onClick={onStart}
                 disabled={!canStart || isStarting || isResetting}
-                className="mt-4 min-h-11 w-full rounded-lg bg-point-orange font-semibold text-white disabled:bg-white/30 disabled:text-white/60"
+                className="mt-4 min-h-11 w-full rounded-lg bg-point-orange font-semibold text-white disabled:bg-[#DED8CE] disabled:text-ink-soft disabled:opacity-100! disabled:shadow-none"
               >
                 {isStarting ? "결과 뽑는 중..." : "시작하기"}
               </Button>
-              {/* 버튼이 왜 눌리지 않는지 적어둔다. 이유 없이 비활성화된 버튼은
-                  기다려야 하는지 고장인지 알 수 없다. */}
-              {!canStart && (
-                <p className="mt-2 text-center text-xs text-ink-soft">
-                  준비를 마친 참가자가 1명 이상이어야 시작할 수 있어요.
-                </p>
-              )}
+              {/* 준비 안내 공간을 유지해 활성화되어도 아래 버튼이 움직이지 않게 한다. */}
+              <p
+                aria-hidden={canStart}
+                className={'mt-2 text-center text-xs text-ink-soft' + (canStart ? ' invisible' : '')}
+              >
+                준비를 마친 참가자가 1명 이상이어야 시작할 수 있어요.
+              </p>
             </>
           ) : (
             <>
