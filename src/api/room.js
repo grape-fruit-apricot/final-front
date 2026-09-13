@@ -11,7 +11,7 @@ export function fetchRoom(roomUuid) {
 }
 
 // 방 참가
-export function joinRoom(roomUuid, payload) {
+export function createParticipant(roomUuid, payload) {
   return api.post(`/api/rooms/${roomUuid}/participants`, payload)
 }
 

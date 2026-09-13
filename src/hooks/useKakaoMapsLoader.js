@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 const KAKAO_JS_KEY = import.meta.env.VITE_KAKAO_JS_KEY
 // 앱에서 쓰는 라이브러리의 합집합. services 를 포함해 받은 SDK는 포함하지 않은 것의
@@ -17,7 +17,15 @@ function loadKakaoMaps() {
     const script = document.createElement('script')
     script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_JS_KEY}&libraries=${KAKAO_LIBRARIES}&autoload=false`
     script.async = true
-    script.onload = () => window.kakao.maps.load(resolve)
+    script.onload = () => {
+      try {
+        window.kakao.maps.load(resolve)
+      } catch (error) {
+        script.remove()
+        loadPromise = null
+        reject(error)
+      }
+    }
     script.onerror = () => {
       // 실패를 캐시하면 새로고침 전까지 지도가 영영 안 뜬다. 다음 마운트에서
       // 다시 시도할 수 있도록 스크립트와 프라미스를 모두 되돌린다.
@@ -36,24 +44,39 @@ function loadKakaoMaps() {
 // deps: 이 배열이 바뀔 때만 onReady를 다시 호출한다(좌표를 JSON.stringify한 값 등을 넣어
 // 참조가 바뀌어도 내용이 같으면 지도를 다시 만들지 않게 하는 용도).
 export function useKakaoMapsLoader(onReady, deps, { enabled = true } = {}) {
-  useEffect(() => {
-    if (!KAKAO_JS_KEY || !enabled) return
+  const [isLoading, setIsLoading] = useState(enabled)
+  const [error, setError] = useState(null)
 
-    // 로드가 끝나기 전에 언마운트되면 컨테이너 ref가 null이라 지도를 만들다 에러가 난다.
+  useEffect(() => {
     let isCancelled = false
+    setError(null)
+    setIsLoading(enabled)
+
+    if (!enabled) return
+    if (!KAKAO_JS_KEY) {
+      setError(new Error('지도를 불러오지 못했습니다.'))
+      setIsLoading(false)
+      return
+    }
 
     loadKakaoMaps()
       .then(() => {
         if (isCancelled) return
-        onReady()
+        return onReady()
       })
-      // 로드 실패는 여기서 삼킨다(화면 안내는 아직 없다). 그냥 두면 처리되지 않은
-      // 프라미스 거부로 콘솔에 그대로 찍힌다.
-      .catch(() => {})
+      .catch(() => {
+        if (!isCancelled) setError(new Error('지도를 불러오지 못했습니다.'))
+      })
+      .finally(() => {
+        if (!isCancelled) setIsLoading(false)
+      })
 
+    // 화면을 떠난 후 완료된 요청은 상태와 지도를 변경하지 않는다.
     return () => {
       isCancelled = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, deps)
+  }, [enabled, ...deps])
+
+  return { isLoading: enabled && isLoading, error: enabled ? error : null }
 }

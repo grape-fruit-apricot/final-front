@@ -1,3 +1,4 @@
+import MapStatus from './MapStatus'
 import { useEffect, useRef } from 'react'
 import { useKakaoMapsLoader } from '../../hooks/useKakaoMapsLoader'
 import { useKakaoMapResize } from '../../hooks/useKakaoMapResize'
@@ -44,7 +45,7 @@ function TrackingMap({ destination, participants, height = 380 }) {
     }
   }, [])
 
-  useKakaoMapsLoader(
+  const { isLoading, error } = useKakaoMapsLoader(
     () => {
       const maps = window.kakao.maps
       const destinationPosition = new maps.LatLng(destination.lat, destination.lng)
@@ -144,11 +145,14 @@ function TrackingMap({ destination, participants, height = 380 }) {
   )
 
   return (
+    <>
+      <MapStatus isLoading={isLoading} error={error} />
     <div
       ref={containerRef}
       className="w-full overflow-hidden rounded-card border border-edge shadow-surface"
       style={{ height }}
     />
+    </>
   )
 }
 

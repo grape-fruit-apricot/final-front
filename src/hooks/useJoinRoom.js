@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { joinRoom } from '../api/room'
+import { createParticipant } from '../api/room'
 
 // 방 참가 API 호출과 로딩/에러 상태를 관리하는 훅
 function useJoinRoom() {
@@ -10,7 +10,7 @@ function useJoinRoom() {
     setIsLoading(true)
     setError(null)
     try {
-      return await joinRoom(roomUuid, payload)
+      return await createParticipant(roomUuid, payload)
     } catch (err) {
       setError(err)
       throw err
