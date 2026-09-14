@@ -83,7 +83,7 @@ function ChatPage() {
       <PageHeader title="채팅" showBack={false} />
       {/* 대화는 시트가 스크롤을 직접 맡아야 해서 PageSheet 대신 같은 모양을 여기서 만든다.
           PageSheet 의 세로 여백·gap 이 목록 스크롤 계산을 흐린다. */}
-      <div className="flex min-h-0 flex-1 flex-col rounded-t-[28px] border-t border-app-text/12 bg-background px-4 pb-3 pt-2 shadow-glass">
+      <div className="flex min-h-0 flex-1 flex-col rounded-t-[28px] border-t border-app-text/12 bg-background px-5 pb-3 pt-2 shadow-glass">
         {/* 누가 이 방에 있는지 먼저 보여준다. 말풍선만 있으면 조용한 사람은 없는 것처럼 보인다. */}
         <ChatParticipantStrip participants={participants} myParticipantId={myParticipantId} />
 

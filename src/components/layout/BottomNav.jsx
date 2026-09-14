@@ -58,8 +58,8 @@ function BottomNav({ onLeave, isLeaving }) {
   return (
     // 화면 가장자리에서 띄운 유리 알약. 지도가 그 아래로 이어져 보인다.
     // 홈 인디케이터와 겹치지 않도록 safe-area 만큼 더 띄운다.
-    <nav className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-3.5 pb-[calc(env(safe-area-inset-bottom)+1.25rem)]">
-      <div className="pointer-events-auto mx-auto flex h-16 max-w-[430px] items-center gap-1 rounded-full border border-white/70 bg-glass-strong p-1.5 shadow-nav backdrop-blur-2xl backdrop-saturate-150">
+    <nav className="pointer-events-none fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-[430px] px-5 pb-[calc(env(safe-area-inset-bottom)+1.25rem)]">
+      <div className="pointer-events-auto flex h-16 w-full items-center gap-1 rounded-full border border-white/70 bg-glass-strong p-1.5 shadow-nav backdrop-blur-2xl backdrop-saturate-150">
         {/* 나가기는 어느 탭에 있든 눌러야 하므로 맨 앞에 둔다. 선택되는 탭이 아니라 항상 같은 색이다. */}
         <button
           type="button"

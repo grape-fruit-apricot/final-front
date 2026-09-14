@@ -11,12 +11,12 @@ import Button from './Button'
 function FloatingConfirmBar({ isVisible, onConfirm, disabled = false, children }) {
   return (
     <div
-      className={`pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+6.25rem)] z-40 px-3.5 transition-[opacity,transform] duration-200 ${
+      className={`pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+6.25rem)] z-40 mx-auto w-full max-w-[430px] px-5 transition-[opacity,transform] duration-200 ${
         isVisible ? 'translate-y-0 opacity-100' : 'translate-y-3 opacity-0'
       }`}
       aria-hidden={!isVisible}
     >
-      <div className="mx-auto max-w-[430px]">
+      <div className="w-full">
         <Button
           variant="primary"
           size="lg"
