@@ -91,6 +91,7 @@ function useGameActions(publish) {
 
   const handleMode = (status) => {
     setModeVote(status)
+    setPendingMode(null)
     setIsStarting(false)
     setIsVoting(false)
   }
