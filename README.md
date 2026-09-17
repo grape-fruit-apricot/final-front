@@ -220,7 +220,7 @@ let loadPromise = null
 | **Lint · Test** | oxlint **1.79**, `node --test` | 훅 규칙 검사, 입장 오류 분류 로직 단위 테스트 |
 | **Infra** | Nginx, Docker Compose, AWS EC2 · ALB | SPA fallback 과 캐시 정책, 운영 · 개발 컨테이너 분리 |
 | **CI/CD** | GitHub Actions | PR 빌드 검증 · 시크릿 유출 검사, 빌드 후 원자적 교체 배포 |
-| **Collaboration** | Git, GitHub, Figma, Notion, Postman | 브랜치 기반 협업, 화면 설계, API 규격 합의 |
+| **Collaboration** | Git, GitHub, Figma, Notion, Postman, slack | 브랜치 기반 협업, 화면 설계, API 규격 합의 |
 
 ### 설계 원칙
 
