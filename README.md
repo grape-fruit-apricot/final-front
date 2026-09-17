@@ -306,10 +306,10 @@ let loadPromise = null
 
 | 팀원 | 주요 담당 | GitHub |
 | :---: | :--- | :---: |
-| **신순주** | 프로젝트 총괄 · 일정 관리, 지도 연동, 산출물 문서 총괄 | [![GitHub](https://img.shields.io/badge/GitHub-grape--fruit--apricot-F59E0B?style=flat-square&logo=github&logoColor=white)](https://github.com/grape-fruit-apricot) |
-| **박경환** | 중간 지점 계산, 방 생성 · 입장, ERD 설계, 서버 구축, 코드 리팩토링, 미니게임 구현 | [![GitHub](https://img.shields.io/badge/GitHub-ghksl0204--shapa-22C55E?style=flat-square&logo=github&logoColor=white)](https://github.com/ghksl0204-shapa) |
-| **남지호** | 실시간 채팅, WebSocket 세션 관리, UI 스타일 개선, 화면 설계, 산출물 작성 | [![GitHub](https://img.shields.io/badge/GitHub-jiho0828-FF6B6B?style=flat-square&logo=github&logoColor=white)](https://github.com/jiho0828) |
-| **지세웅** | 미니게임 구현, 테스트 검증, 오류 케이스 작성 | [![GitHub](https://img.shields.io/badge/GitHub-CU0--0-3B82F6?style=flat-square&logo=github&logoColor=white)](https://github.com/CU0-0) |
+| **신순주** | 프로젝트 총괄 · 일정 관리, 카카오·Tmap 지도, 중간지점 산출 화면, 최종 이동경로 안내 화면, 로고 제작, 코드 리팩토링 | [![GitHub](https://img.shields.io/badge/GitHub-grape--fruit--apricot-F59E0B?style=flat-square&logo=github&logoColor=white)](https://github.com/grape-fruit-apricot) |
+| **박경환** | 초기화면 및 공통 모듈 설계, 식당 조회·추가·선택 화면, 게임 화면 구현, 사용자 편의 인터페이스, 실시간 이동 추적 화면 | [![GitHub](https://img.shields.io/badge/GitHub-ghksl0204--shapa-22C55E?style=flat-square&logo=github&logoColor=white)](https://github.com/ghksl0204-shapa) |
+| **남지호** | 실시간 채팅 화면, 웹소캣 요청 구조 설계, 화면 UI 스타일링, 산출물 문서 작성 | [![GitHub](https://img.shields.io/badge/GitHub-jiho0828-FF6B6B?style=flat-square&logo=github&logoColor=white)](https://github.com/jiho0828) |
+| **지세웅** | 미니게임 설계, 오류 케이스 작성, 테스트 검증 | [![GitHub](https://img.shields.io/badge/GitHub-CU0--0-3B82F6?style=flat-square&logo=github&logoColor=white)](https://github.com/CU0-0) |
 
 ### 협업 방식
 
