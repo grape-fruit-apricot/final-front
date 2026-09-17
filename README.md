@@ -451,5 +451,6 @@ Pull Request 마다 GitHub Actions 가 다음을 순서대로 확인합니다.
 
 **딱 중간 — 모두의 중간에서 만나고, 게임으로 식당을 정한다**
 
+<sub> Team.Legend 딱 중간 프로젝트 · 6주</sub>
 
 </div>
