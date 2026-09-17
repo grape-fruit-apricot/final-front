@@ -345,7 +345,6 @@ let loadPromise = null
 <p align="center">
   <img width="900" alt="화면 설계" src="https://github.com/user-attachments/assets/38c6861c-4bd5-41c4-a07b-3fcea0d34158" />
 </p>
-API 명세서(Notion)
 
 ---
 
