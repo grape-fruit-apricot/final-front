@@ -4,15 +4,15 @@
 #
 #   사용법: web-deploy.sh <main|develop> <git-sha>
 #
-# 하는 일: 새 dist 를 마운트된 디렉터리 "안쪽"에 밀어넣고, 응답을 확인한다.
+# 하는 일: 새 dist 를 마운트된 디렉터리 "안쪽"에 밀어넣고, Caddy를 통한 HTTPS 응답을 확인한다.
 set -euo pipefail
 
 ENV_NAME="${1:?첫 번째 인자로 main 또는 develop 이 필요합니다}"
 SHA="${2:-unknown}"
 
 case "$ENV_NAME" in
-  main)    PORT=80 ;;
-  develop) PORT=8081 ;;
+  main)    WEB_HOST="www.midpoint.my" ;;
+  develop) WEB_HOST="dev.midpoint.my" ;;
   *) echo "알 수 없는 환경: $ENV_NAME" >&2; exit 1 ;;
 esac
 
@@ -22,6 +22,7 @@ STAGE="${INCOMING}/dist-stage"
 TIMEOUT_SEC=60
 
 command -v rsync >/dev/null || { echo "rsync 가 필요합니다: sudo apt install -y rsync" >&2; exit 1; }
+command -v curl >/dev/null || { echo "curl 이 필요합니다: sudo apt install -y curl" >&2; exit 1; }
 test -f "${INCOMING}/dist.tar.gz" || { echo "받은 dist.tar.gz 가 없습니다" >&2; exit 1; }
 
 echo "[1/4] 압축 해제 (${ENV_NAME}, ${SHA})"
@@ -53,7 +54,7 @@ echo "[4/4] 확인 (최대 ${TIMEOUT_SEC}초)"
 deadline=$(( $(date +%s) + TIMEOUT_SEC ))
 ok=0
 while [ "$(date +%s)" -lt "$deadline" ]; do
-  code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 "http://127.0.0.1:${PORT}/" || echo 000)
+  code=$(curl -sS -o /dev/null -w '%{http_code}' --noproxy '*' --connect-timeout 3 --max-time 5 --resolve "${WEB_HOST}:443:127.0.0.1" "https://${WEB_HOST}/") || code=000
   if [ "$code" = "200" ]; then ok=1; break; fi
   echo "      대기 중... (HTTP ${code})"
   sleep 3
@@ -61,8 +62,8 @@ done
 
 if [ "$ok" -ne 1 ]; then
   echo "[!] 확인 실패. 배포를 실패로 처리합니다."
-  echo "----- ${ENV_NAME}-web 최근 로그 40줄 -----"
-  (cd /opt/midpoint && docker compose logs --tail 40 --no-log-prefix "${ENV_NAME}-web") || true
+  echo "----- ${ENV_NAME}-web 및 Caddy 최근 로그 40줄 -----"
+  (cd /opt/midpoint && docker compose logs --tail 40 --no-log-prefix "${ENV_NAME}-web" caddy) || true
   echo "------------------------------------------"
   echo "되돌리려면: rsync -a --delete ${BASE}/dist.prev/ ${BASE}/dist/"
   exit 1
